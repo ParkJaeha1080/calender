@@ -1,0 +1,2514 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Windows 11 Calendar OS</title>
+
+  <style>
+    :root {
+      --win-bg: #0b1320;
+      --taskbar-bg: #161b22;
+      --win-surface: #1c2128;
+      --win-border: rgba(255, 255, 255, 0.25);
+      --accent: #0078d4;
+      --accent-hover: #106ebe;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --card-bg: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 255, 255, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      background: radial-gradient(
+        circle at 50% 120%,
+        #1e3c72 0%,
+        #172a45 40%,
+        #0b1320 100%
+      );
+      color: var(--text-main);
+      position: relative;
+    }
+
+    .icon {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vertical-align: middle;
+      pointer-events: none;
+    }
+
+    /* DESKTOP */
+
+    #desktop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 80px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 16px;
+      z-index: 1;
+    }
+
+    .desktop-icon {
+      width: 88px;
+      height: 94px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 6px;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .desktop-icon:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .desktop-icon .icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      pointer-events: none;
+    }
+
+    .desktop-icon .icon-box svg {
+      width: 24px;
+      height: 24px;
+      stroke: #ffffff;
+    }
+
+    .desktop-icon span {
+      font-size: 12px;
+      font-weight: 500;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+    }
+
+    /* WINDOWS */
+
+    .window {
+      position: absolute;
+      min-width: 300px;
+      min-height: 380px;
+      width: 680px;
+      height: 540px;
+      max-width: 95vw;
+      max-height: calc(100dvh - 90px);
+      background: var(--win-surface);
+      border: 1px solid var(--win-border);
+      border-radius: 12px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 100;
+    }
+
+    .window.hidden {
+      display: none !important;
+    }
+
+    .window.maximized {
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: calc(100dvh - 75px) !important;
+      max-width: 100vw !important;
+      max-height: calc(100dvh - 75px) !important;
+      border-radius: 0;
+    }
+
+    /* ★ 드래그 헤더 */
+
+    .window-header {
+      height: 52px;
+      min-height: 52px;
+      padding: 0 12px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+
+      cursor: move;
+
+      /* 드래그 핵심 */
+      touch-action: none;
+      -webkit-touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+
+      position: relative;
+      z-index: 2;
+    }
+
+    .window-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      /* 버튼은 드래그 영역에서 제외 */
+      pointer-events: auto;
+    }
+
+    .control-btn {
+      width: 38px;
+      height: 34px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      border-radius: 4px;
+
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .control-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .control-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .control-btn.close:active {
+      background: #e81123;
+      color: #fff;
+    }
+
+    .window-body {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      user-select: text;
+      -webkit-user-select: text;
+      touch-action: pan-y;
+      color: #ffffff;
+    }
+
+    /* TASKBAR */
+
+    #taskbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+
+      background: var(--taskbar-bg);
+      border-top: 2px solid var(--win-border);
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 14px;
+      padding-bottom: env(safe-area-inset-bottom, 8px);
+
+      z-index: 999999;
+
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .taskbar-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .taskbar-btn {
+      width: 46px;
+      height: 46px;
+
+      border-radius: 10px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+
+      color: var(--text-main);
+
+      cursor: pointer;
+      position: relative;
+    }
+
+    .taskbar-btn:active {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .taskbar-btn.active::after {
+      content: "";
+
+      position: absolute;
+      bottom: 4px;
+
+      width: 18px;
+      height: 3px;
+
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .taskbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      font-size: 11px;
+      text-align: right;
+      padding-right: 4px;
+    }
+
+    /* FORM */
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+
+      padding: 10px 12px;
+
+      color: #fff;
+      font-size: 14px;
+
+      outline: none;
+
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+
+      border: none;
+
+      padding: 10px 14px;
+
+      border-radius: 6px;
+
+      font-size: 13px;
+      font-weight: 600;
+
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      gap: 6px;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+
+      border: 1px solid var(--card-border);
+
+      padding: 6px 10px;
+
+      border-radius: 6px;
+
+      font-size: 12px;
+
+      cursor: pointer;
+    }
+
+    /* CALENDAR */
+
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+
+    .cal-grid {
+      display: grid !important;
+      grid-template-columns: repeat(7, 1fr) !important;
+
+      gap: 4px;
+
+      background: rgba(0, 0, 0, 0.3);
+
+      padding: 6px;
+
+      border-radius: 8px;
+
+      border: 1px solid var(--card-border);
+    }
+
+    .cal-cell-header {
+      text-align: center;
+
+      font-size: 12px;
+      color: #94a3b8;
+
+      font-weight: 700;
+
+      padding: 6px 0;
+    }
+
+    .cal-cell {
+      min-height: 46px;
+
+      background: rgba(255, 255, 255, 0.05);
+
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      border-radius: 6px;
+
+      padding: 4px;
+
+      display: flex;
+      flex-direction: column;
+
+      overflow: hidden;
+
+      cursor: pointer;
+    }
+
+    .cal-cell.empty {
+      background: transparent;
+      border: none;
+      cursor: default;
+    }
+
+    .cal-cell.today {
+      border: 1.5px solid var(--accent);
+      background: rgba(0, 120, 212, 0.35);
+    }
+
+    .cal-cell .date-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f8fafc;
+
+      margin-bottom: 2px;
+    }
+
+    .cal-event-pill {
+      font-size: 9px;
+
+      background: #0e639c;
+      color: #fff;
+
+      padding: 2px 4px;
+
+      border-radius: 3px;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      margin-bottom: 2px;
+    }
+
+    .cal-event-pill.ai-gen {
+      background: #8b5cf6;
+    }
+
+    /* TODAY */
+
+    .today-panel {
+      background: rgba(0, 0, 0, 0.35);
+
+      border: 1px solid var(--card-border);
+
+      border-radius: 8px;
+
+      padding: 10px 12px;
+
+      margin-bottom: 14px;
+    }
+
+    .event-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      background: rgba(255, 255, 255, 0.06);
+
+      border: 1px solid rgba(255, 255, 255, 0.1);
+
+      border-radius: 6px;
+
+      padding: 8px 10px;
+
+      margin-top: 6px;
+    }
+
+    .event-card .left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 10px;
+
+      padding: 2px 6px;
+
+      border-radius: 4px;
+
+      font-weight: 600;
+    }
+
+    .badge-user {
+      background: #0078d4;
+    }
+
+    .badge-ai {
+      background: #8b5cf6;
+    }
+
+    /* AI */
+
+    .ai-container {
+      display: flex;
+      flex-direction: column;
+
+      height: 100%;
+    }
+
+    .chat-messages {
+      flex: 1;
+
+      overflow-y: auto;
+
+      display: flex;
+      flex-direction: column;
+
+      gap: 10px;
+
+      padding-bottom: 10px;
+    }
+
+    .chat-msg {
+      max-width: 88%;
+
+      padding: 10px 12px;
+
+      border-radius: 10px;
+
+      font-size: 13px;
+
+      line-height: 1.45;
+    }
+
+    .chat-msg.assistant {
+      align-self: flex-start;
+
+      background: rgba(139, 92, 246, 0.25);
+
+      border: 1px solid rgba(139, 92, 246, 0.45);
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+
+      background: var(--accent);
+
+      color: #fff;
+    }
+
+    .chat-input-area {
+      border-top: 1px solid var(--card-border);
+
+      padding-top: 8px;
+
+      display: flex;
+      flex-direction: column;
+
+      gap: 8px;
+    }
+
+    .event-action-box {
+      margin-top: 8px;
+
+      background: rgba(0, 0, 0, 0.35);
+
+      border: 1px solid var(--card-border);
+
+      border-radius: 6px;
+
+      padding: 8px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    @media (max-width: 600px) {
+      .window {
+        width: 94vw !important;
+        left: 3vw !important;
+      }
+
+      .taskbar-right {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- DESKTOP ICONS -->
+
+  <div id="desktop">
+
+    <div class="desktop-icon" onclick="openWindow('win-calendar')">
+      <div class="icon-box"
+        style="background: linear-gradient(135deg, #0078d4, #00b4d8);">
+
+        <svg viewBox="0 0 24 24" class="icon">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+
+      </div>
+
+      <span>전체 캘린더</span>
+    </div>
+
+
+    <div class="desktop-icon" onclick="openWindow('win-ai')">
+
+      <div class="icon-box"
+        style="background: linear-gradient(135deg, #8b5cf6, #d946ef);">
+
+        <svg viewBox="0 0 24 24" class="icon">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path>
+        </svg>
+
+      </div>
+
+      <span>AI 일정 추가</span>
+
+    </div>
+
+
+    <div class="desktop-icon" onclick="openWindow('win-manual')">
+
+      <div class="icon-box"
+        style="background: linear-gradient(135deg, #10b981, #059669);">
+
+        <svg viewBox="0 0 24 24" class="icon">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+
+      </div>
+
+      <span>일정 추가</span>
+
+    </div>
+
+  </div>
+
+
+  <!-- CALENDAR WINDOW -->
+
+  <div id="win-calendar"
+    class="window hidden"
+    style="top:20px; left:24px;">
+
+    <div class="window-header">
+
+      <div class="window-title">
+
+        <svg viewBox="0 0 24 24"
+          class="icon"
+          style="stroke:#0078d4;">
+
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+
+        </svg>
+
+        <span>전체 캘린더</span>
+
+      </div>
+
+
+      <div class="window-controls">
+
+        <button class="control-btn"
+          onclick="minimizeWindow('win-calendar')">
+
+          <svg viewBox="0 0 24 24" class="icon">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+
+        </button>
+
+
+        <button class="control-btn"
+          onclick="maximizeWindow('win-calendar')">
+
+          <svg viewBox="0 0 24 24" class="icon">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          </svg>
+
+        </button>
+
+
+        <button class="control-btn close"
+          onclick="closeWindow('win-calendar')">
+
+          <svg viewBox="0 0 24 24" class="icon">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="window-body">
+
+      <div class="today-panel">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+
+          <h4 style="font-size:13px;">
+
+            오늘 할 일
+            (<span id="today-date-text"></span>)
+
+          </h4>
+
+          <span id="today-count"
+            style="font-size:11px;color:var(--text-muted);">
+            0개 일정
+          </span>
+
+        </div>
+
+        <div id="today-task-list"></div>
+
+      </div>
+
+
+      <div class="cal-header">
+
+        <h3 id="current-month-label"
+          style="font-size:15px;">
+          2026년 8월
+        </h3>
+
+
+        <div style="display:flex;gap:6px;">
+
+          <button class="control-btn"
+            onclick="changeMonth(-1)">
+
+            <svg viewBox="0 0 24 24" class="icon">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+
+          </button>
+
+
+          <button class="control-btn"
+            onclick="resetToday()">
+
+            <svg viewBox="0 0 24 24" class="icon">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+
+          </button>
+
+
+          <button class="control-btn"
+            onclick="changeMonth(1)">
+
+            <svg viewBox="0 0 24 24" class="icon">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="cal-grid"
+        id="cal-grid-container">
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- AI WINDOW -->
+
+  <div id="win-ai"
+    class="window hidden"
+    style="top:30px;left:40px;width:440px;height:520px;">
+
+    <div class="window-header">
+
+      <div class="window-title">
+
+        <svg viewBox="0 0 24 24"
+          class="icon"
+          style="stroke:#8b5cf6;">
+
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path>
+
+        </svg>
+
+        <span>AI 일정 추가</span>
+
+      </div>
+
+
+      <div class="window-controls">
+
+        <button class="control-btn"
+          onclick="minimizeWindow('win-ai')">
+
+          <svg viewBox="0 0 24 24" class="icon">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+
+        </button>
+
+
+        <button class="control-btn"
+          onclick="maximizeWindow('win-ai')">
+
+          <svg viewBox="0 0 24 24" class="icon">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          </svg>
+
+        </button>
+
+
+        <button class="control-btn close"
+          onclick="closeWindow('win-ai')">
+
+          <svg viewBox="0 0 24 24" class="icon">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="window-body">
+
+      <div class="ai-container">
+
+        <div class="chat-messages"
+          id="ai-chat-messages">
+
+          <div class="chat-msg assistant">
+
+            👋 안녕하세요! 내장 AI 일정 비서입니다.
+
+            <br><br>
+
+            자연어로 일정을 요청하면 자동으로 날짜/시간을 인식해
+            캘린더에 등록합니다.
+
+            <br><br>
+
+            💡 "내일 오후 3시 팀 회의 잡아줘"
+
+            <br>
+
+            💡 "8월 25일 저녁 7시 친구 약속"
+
+          </div>
+
+        </div>
+
+
+        <div class="chat-input-area">
+
+          <div style="display:flex;gap:6px;">
+
+            <input
+              type="text"
+              id="ai-chat-input"
+              placeholder="일정을 자연어로 입력하세요..."
+              onkeydown="if(event.key==='Enter') sendAIChat()"
+            >
+
+            <button
+              class="btn-primary"
+              style="background:#8b5cf6;padding:0 14px;"
+              onclick="sendAIChat()">
+
+              ➤
+
+            </button>
+
+          </div>
+
+
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+
+            <span style="font-size:11px;color:#a78bfa;">
+              내장 스마트 AI 분석 엔진 작동 중
+            </span>
+
+            <button
+              class="btn-secondary"
+              onclick="clearAIChat()">
+              초기화
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MANUAL WINDOW -->
+
+  <div id="win-manual"
+    class="window hidden"
+    style="top:40px;left:50px;width:380px;height:440px;">
+
+    <div class="window-header">
+
+      <div class="window-title">
+
+        <svg viewBox="0 0 24 24"
+          class="icon"
+          style="stroke:#10b981;">
+
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+
+        </svg>
+
+        <span>일정 추가</span>
+
+      </div>
+
+
+      <div class="window-controls">
+
+        <button class="control-btn"
+          onclick="minimizeWindow('win-manual')">
+
+          ─
+
+        </button>
+
+        <button class="control-btn"
+          onclick="maximizeWindow('win-manual')">
+
+          □
+
+        </button>
+
+        <button class="control-btn close"
+          onclick="closeWindow('win-manual')">
+
+          ✕
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="window-body">
+
+      <form onsubmit="handleManualAdd(event)">
+
+        <div class="form-group">
+
+          <label>일정 제목</label>
+
+          <input
+            type="text"
+            id="manual-title"
+            placeholder="일정 이름을 입력하세요"
+            required>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>날짜</label>
+
+          <input
+            type="date"
+            id="manual-date"
+            required>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>시간</label>
+
+          <input
+            type="time"
+            id="manual-time"
+            required>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>메모</label>
+
+          <input
+            type="text"
+            id="manual-desc"
+            placeholder="상세 내용">
+
+        </div>
+
+
+        <button
+          type="submit"
+          class="btn-primary"
+          style="background:#10b981;width:100%;">
+
+          ＋ 일정 등록하기
+
+        </button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- TASKBAR -->
+
+  <div id="taskbar">
+
+    <button class="taskbar-btn">
+      ☰
+    </button>
+
+
+    <div class="taskbar-center">
+
+      <button
+        class="taskbar-btn"
+        id="task-win-calendar"
+        onclick="toggleWindow('win-calendar')">
+
+        📅
+
+      </button>
+
+
+      <button
+        class="taskbar-btn"
+        id="task-win-ai"
+        onclick="toggleWindow('win-ai')">
+
+        ✦
+
+      </button>
+
+
+      <button
+        class="taskbar-btn"
+        id="task-win-manual"
+        onclick="toggleWindow('win-manual')">
+
+        📅
+
+      </button>
+
+    </div>
+
+
+    <div class="taskbar-right">
+
+      <div>
+
+        <div id="tb-time"
+          style="font-weight:600;">
+          오후 12:00
+        </div>
+
+        <div id="tb-date"
+          style="color:var(--text-muted);">
+          2026-08-22
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    /* ==========================================
+       DATA
+    ========================================== */
+
+    var currentEvents =
+      JSON.parse(
+        localStorage.getItem("win11_cal_events") || "[]"
+      );
+
+    var currentNavDate = new Date();
+
+    var topZ = 200;
+
+
+    /* ==========================================
+       WINDOW CONTROL
+    ========================================== */
+
+    function openWindow(id) {
+
+      var win = document.getElementById(id);
+
+      if (!win) return;
+
+      win.classList.remove("hidden");
+
+      topZ++;
+
+      win.style.zIndex = topZ;
+
+      updateTaskbar();
+
+      if (id === "win-calendar") {
+
+        renderCalendar();
+
+        renderTodayTasks();
+
+      }
+
+    }
+
+
+    function closeWindow(id) {
+
+      var win = document.getElementById(id);
+
+      if (!win) return;
+
+      win.classList.add("hidden");
+
+      updateTaskbar();
+
+    }
+
+
+    function minimizeWindow(id) {
+
+      closeWindow(id);
+
+    }
+
+
+    function maximizeWindow(id) {
+
+      var win = document.getElementById(id);
+
+      if (!win) return;
+
+      win.classList.toggle("maximized");
+
+    }
+
+
+    function toggleWindow(id) {
+
+      var win = document.getElementById(id);
+
+      if (!win) return;
+
+      if (win.classList.contains("hidden")) {
+
+        openWindow(id);
+
+      } else {
+
+        closeWindow(id);
+
+      }
+
+    }
+
+
+    function updateTaskbar() {
+
+      var ids = [
+        "win-calendar",
+        "win-ai",
+        "win-manual"
+      ];
+
+      for (var i = 0; i < ids.length; i++) {
+
+        var win =
+          document.getElementById(ids[i]);
+
+        var btn =
+          document.getElementById(
+            "task-" + ids[i]
+          );
+
+        if (btn && win) {
+
+          btn.classList.toggle(
+            "active",
+            !win.classList.contains("hidden")
+          );
+
+        }
+
+      }
+
+    }
+
+
+    /* ==========================================
+       ★ UNIVERSAL WINDOW DRAG
+       PC + MOBILE + TOUCH + PEN
+    ========================================== */
+
+    function initWindows() {
+
+      var wins =
+        document.querySelectorAll(".window");
+
+
+      for (var i = 0; i < wins.length; i++) {
+
+        (function(win) {
+
+          var header =
+            win.querySelector(".window-header");
+
+          if (!header) return;
+
+
+          var dragging = false;
+
+          var pointerId = null;
+
+          var startX = 0;
+          var startY = 0;
+
+          var startLeft = 0;
+          var startTop = 0;
+
+
+          /* 창을 클릭하면 앞으로 */
+
+          win.addEventListener(
+            "pointerdown",
+            function() {
+
+              topZ++;
+
+              win.style.zIndex = topZ;
+
+            }
+          );
+
+
+          /* 드래그 시작 */
+
+          header.addEventListener(
+            "pointerdown",
+            function(e) {
+
+              /* 버튼 클릭은 드래그 금지 */
+
+              if (
+                e.target.closest &&
+                e.target.closest(".control-btn")
+              ) {
+
+                return;
+
+              }
+
+
+              /* 최대화 상태 */
+
+              if (
+                win.classList.contains("maximized")
+              ) {
+
+                return;
+
+              }
+
+
+              dragging = true;
+
+              pointerId = e.pointerId;
+
+
+              topZ++;
+
+              win.style.zIndex = topZ;
+
+
+              startX = e.clientX;
+
+              startY = e.clientY;
+
+
+              var rect =
+                win.getBoundingClientRect();
+
+              startLeft = rect.left;
+
+              startTop = rect.top;
+
+
+              /* 브라우저의 기본 터치 동작 차단 */
+
+              e.preventDefault();
+
+
+              /* Pointer Capture */
+
+              if (
+                header.setPointerCapture
+              ) {
+
+                try {
+
+                  header.setPointerCapture(
+                    pointerId
+                  );
+
+                } catch (err) {}
+
+              }
+
+            }
+          );
+
+
+          /* 드래그 이동 */
+
+          header.addEventListener(
+            "pointermove",
+            function(e) {
+
+              if (!dragging) return;
+
+              e.preventDefault();
+
+
+              var dx =
+                e.clientX - startX;
+
+              var dy =
+                e.clientY - startY;
+
+
+              var newLeft =
+                startLeft + dx;
+
+              var newTop =
+                startTop + dy;
+
+
+              var winWidth =
+                win.offsetWidth;
+
+
+              /*
+               * 위쪽 제한
+               */
+
+              newTop =
+                Math.max(
+                  0,
+                  Math.min(
+                    newTop,
+                    window.innerHeight - 80
+                  )
+                );
+
+
+              /*
+               * 좌우 제한
+               * 최소 60px은 화면에 남음
+               */
+
+              newLeft =
+                Math.max(
+                  -winWidth + 60,
+                  Math.min(
+                    newLeft,
+                    window.innerWidth - 60
+                  )
+                );
+
+
+              win.style.left =
+                newLeft + "px";
+
+              win.style.top =
+                newTop + "px";
+
+            }
+          );
+
+
+          /* 드래그 종료 */
+
+          function stopDrag(e) {
+
+            if (!dragging) return;
+
+            dragging = false;
+
+
+            if (
+              e &&
+              e.pointerId === pointerId &&
+              header.releasePointerCapture
+            ) {
+
+              try {
+
+                if (
+                  header.hasPointerCapture &&
+                  header.hasPointerCapture(
+                    e.pointerId
+                  )
+                ) {
+
+                  header.releasePointerCapture(
+                    e.pointerId
+                  );
+
+                }
+
+              } catch (err) {}
+
+            }
+
+            pointerId = null;
+
+          }
+
+
+          header.addEventListener(
+            "pointerup",
+            stopDrag
+          );
+
+
+          header.addEventListener(
+            "pointercancel",
+            stopDrag
+          );
+
+
+          header.addEventListener(
+            "lostpointercapture",
+            function() {
+
+              dragging = false;
+
+              pointerId = null;
+
+            }
+          );
+
+
+        })(wins[i]);
+
+      }
+
+    }
+
+
+    /* ==========================================
+       CALENDAR
+    ========================================== */
+
+    function renderCalendar() {
+
+      var year =
+        currentNavDate.getFullYear();
+
+      var month =
+        currentNavDate.getMonth();
+
+
+      var label =
+        document.getElementById(
+          "current-month-label"
+        );
+
+
+      if (label) {
+
+        label.innerText =
+          year +
+          "년 " +
+          (month + 1) +
+          "월";
+
+      }
+
+
+      var grid =
+        document.getElementById(
+          "cal-grid-container"
+        );
+
+
+      if (!grid) return;
+
+
+      grid.innerHTML = "";
+
+
+      var days = [
+        "일",
+        "월",
+        "화",
+        "수",
+        "목",
+        "금",
+        "토"
+      ];
+
+
+      days.forEach(function(day) {
+
+        var h =
+          document.createElement("div");
+
+        h.className =
+          "cal-cell-header";
+
+        h.innerText = day;
+
+        grid.appendChild(h);
+
+      });
+
+
+      var firstDay =
+        new Date(
+          year,
+          month,
+          1
+        ).getDay();
+
+
+      var lastDate =
+        new Date(
+          year,
+          month + 1,
+          0
+        ).getDate();
+
+
+      var now = new Date();
+
+
+      var todayStr =
+        now.getFullYear() +
+        "-" +
+        String(
+          now.getMonth() + 1
+        ).padStart(2, "0") +
+        "-" +
+        String(
+          now.getDate()
+        ).padStart(2, "0");
+
+
+      for (
+        var i = 0;
+        i < firstDay;
+        i++
+      ) {
+
+        var empty =
+          document.createElement("div");
+
+        empty.className =
+          "cal-cell empty";
+
+        grid.appendChild(empty);
+
+      }
+
+
+      for (
+        var day = 1;
+        day <= lastDate;
+        day++
+      ) {
+
+        var dateKey =
+          year +
+          "-" +
+          String(month + 1).padStart(2, "0") +
+          "-" +
+          String(day).padStart(2, "0");
+
+
+        var cell =
+          document.createElement("div");
+
+
+        cell.className =
+          "cal-cell" +
+          (
+            dateKey === todayStr
+              ? " today"
+              : ""
+          );
+
+
+        var num =
+          document.createElement("div");
+
+        num.className =
+          "date-num";
+
+        num.innerText = day;
+
+        cell.appendChild(num);
+
+
+        var dayEvents =
+          currentEvents.filter(
+            function(e) {
+
+              return e.date === dateKey;
+
+            }
+          );
+
+
+        dayEvents.forEach(function(event) {
+
+          var pill =
+            document.createElement("div");
+
+          pill.className =
+            "cal-event-pill" +
+            (
+              event.isAI
+                ? " ai-gen"
+                : ""
+            );
+
+
+          pill.innerText =
+            (
+              event.time
+                ? event.time + " "
+                : ""
+            ) +
+            event.title;
+
+
+          cell.appendChild(pill);
+
+        });
+
+
+        cell.onclick = function() {
+
+          var mDate =
+            document.getElementById(
+              "manual-date"
+            );
+
+
+          if (mDate) {
+
+            mDate.value = dateKey;
+
+          }
+
+
+          openWindow("win-manual");
+
+        };
+
+
+        grid.appendChild(cell);
+
+      }
+
+    }
+
+
+    function changeMonth(delta) {
+
+      currentNavDate.setMonth(
+        currentNavDate.getMonth() + delta
+      );
+
+      renderCalendar();
+
+    }
+
+
+    function resetToday() {
+
+      currentNavDate =
+        new Date();
+
+      renderCalendar();
+
+    }
+
+
+    /* ==========================================
+       TODAY EVENTS
+    ========================================== */
+
+    function renderTodayTasks() {
+
+      var now = new Date();
+
+
+      var todayStr =
+        now.getFullYear() +
+        "-" +
+        String(
+          now.getMonth() + 1
+        ).padStart(2, "0") +
+        "-" +
+        String(
+          now.getDate()
+        ).padStart(2, "0");
+
+
+      var dateText =
+        document.getElementById(
+          "today-date-text"
+        );
+
+
+      if (dateText) {
+
+        dateText.innerText =
+          todayStr;
+
+      }
+
+
+      var todayEvents =
+        currentEvents.filter(
+          function(e) {
+
+            return e.date === todayStr;
+
+          }
+        );
+
+
+      var countEl =
+        document.getElementById(
+          "today-count"
+        );
+
+
+      if (countEl) {
+
+        countEl.innerText =
+          todayEvents.length +
+          "개 일정";
+
+      }
+
+
+      var list =
+        document.getElementById(
+          "today-task-list"
+        );
+
+
+      if (!list) return;
+
+
+      list.innerHTML = "";
+
+
+      if (todayEvents.length === 0) {
+
+        list.innerHTML =
+          '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">오늘 예정된 일정이 없습니다.</div>';
+
+        return;
+
+      }
+
+
+      todayEvents.forEach(function(item) {
+
+        var card =
+          document.createElement("div");
+
+
+        card.className =
+          "event-card";
+
+
+        var left =
+          document.createElement("div");
+
+        left.className = "left";
+
+
+        var badge =
+          document.createElement("span");
+
+        badge.className =
+          "badge " +
+          (
+            item.isAI
+              ? "badge-ai"
+              : "badge-user"
+          );
+
+        badge.innerText =
+          item.isAI
+            ? "AI"
+            : "일반";
+
+
+        var info =
+          document.createElement("div");
+
+
+        var title =
+          document.createElement("strong");
+
+        title.style.fontSize =
+          "13px";
+
+        title.innerText =
+          item.title;
+
+
+        var desc =
+          document.createElement("div");
+
+        desc.style.fontSize =
+          "11px";
+
+        desc.style.color =
+          "var(--text-muted)";
+
+        desc.innerText =
+          (
+            item.time ||
+            "종일"
+          ) +
+          (
+            item.desc
+              ? " • " + item.desc
+              : ""
+          );
+
+
+        info.appendChild(title);
+
+        info.appendChild(desc);
+
+        left.appendChild(badge);
+
+        left.appendChild(info);
+
+
+        var del =
+          document.createElement("button");
+
+        del.className =
+          "control-btn close";
+
+        del.innerText = "✕";
+
+        del.onclick =
+          function() {
+
+            deleteEvent(item.id);
+
+          };
+
+
+        card.appendChild(left);
+
+        card.appendChild(del);
+
+        list.appendChild(card);
+
+      });
+
+    }
+
+
+    /* ==========================================
+       MANUAL EVENT
+    ========================================== */
+
+    function handleManualAdd(e) {
+
+      e.preventDefault();
+
+
+      var title =
+        document.getElementById(
+          "manual-title"
+        ).value.trim();
+
+
+      var date =
+        document.getElementById(
+          "manual-date"
+        ).value;
+
+
+      var time =
+        document.getElementById(
+          "manual-time"
+        ).value;
+
+
+      var desc =
+        document.getElementById(
+          "manual-desc"
+        ).value.trim();
+
+
+      if (!title || !date) return;
+
+
+      currentEvents.push({
+
+        id:
+          "evt_" +
+          Date.now(),
+
+        title: title,
+
+        date: date,
+
+        time: time,
+
+        desc: desc,
+
+        isAI: false
+
+      });
+
+
+      localStorage.setItem(
+        "win11_cal_events",
+        JSON.stringify(currentEvents)
+      );
+
+
+      document.getElementById(
+        "manual-title"
+      ).value = "";
+
+
+      document.getElementById(
+        "manual-desc"
+      ).value = "";
+
+
+      closeWindow("win-manual");
+
+      openWindow("win-calendar");
+
+    }
+
+
+    function deleteEvent(id) {
+
+      currentEvents =
+        currentEvents.filter(
+          function(e) {
+
+            return e.id !== id;
+
+          }
+        );
+
+
+      localStorage.setItem(
+        "win11_cal_events",
+        JSON.stringify(currentEvents)
+      );
+
+
+      renderCalendar();
+
+      renderTodayTasks();
+
+    }
+
+
+    /* ==========================================
+       AI
+    ========================================== */
+
+    function sendAIChat() {
+
+      var input =
+        document.getElementById(
+          "ai-chat-input"
+        );
+
+
+      var text =
+        input.value.trim();
+
+
+      if (!text) return;
+
+
+      input.value = "";
+
+
+      appendChatMessage(
+        "user",
+        text
+      );
+
+
+      var now = new Date();
+
+      var targetDate =
+        new Date();
+
+
+      var targetTime =
+        "09:00";
+
+
+      var title =
+        text;
+
+
+      if (text.includes("내일")) {
+
+        targetDate.setDate(
+          now.getDate() + 1
+        );
+
+        title =
+          title.replace(
+            /내일/g,
+            ""
+          );
+
+      } else if (
+        text.includes("모레")
+      ) {
+
+        targetDate.setDate(
+          now.getDate() + 2
+        );
+
+        title =
+          title.replace(
+            /모레/g,
+            ""
+          );
+
+      } else if (
+        text.includes("오늘")
+      ) {
+
+        title =
+          title.replace(
+            /오늘/g,
+            ""
+          );
+
+      } else {
+
+        var matchMD =
+          text.match(
+            /(\d{1,2})월\s*(\d{1,2})일/
+          );
+
+
+        if (matchMD) {
+
+          targetDate =
+            new Date(
+              now.getFullYear(),
+              parseInt(matchMD[1]) - 1,
+              parseInt(matchMD[2])
+            );
+
+
+          title =
+            title.replace(
+              matchMD[0],
+              ""
+            );
+
+        }
+
+      }
+
+
+      var matchTime =
+        text.match(
+          /(오전|오후|낮|밤|저녁|아침)?\s*(\d{1,2})시(\s*(\d{1,2})분)?/
+        );
+
+
+      if (matchTime) {
+
+        var hour =
+          parseInt(matchTime[2]);
+
+
+        var period =
+          matchTime[1];
+
+
+        var minute =
+          matchTime[4]
+            ? parseInt(matchTime[4])
+            : 0;
+
+
+        if (
+          period &&
+          (
+            period === "오후" ||
+            period === "저녁" ||
+            period === "밤"
+          ) &&
+          hour < 12
+        ) {
+
+          hour += 12;
+
+        }
+
+
+        if (
+          period &&
+          (
+            period === "오전" ||
+            period === "아침"
+          ) &&
+          hour === 12
+        ) {
+
+          hour = 0;
+
+        }
+
+
+        targetTime =
+          String(hour).padStart(2, "0") +
+          ":" +
+          String(minute).padStart(2, "0");
+
+
+        title =
+          title.replace(
+            matchTime[0],
+            ""
+          );
+
+      }
+
+
+      title =
+        title.replace(
+          /(추가해줘|등록해줘|일정|잡아줘|예약|해줘|에|을|를)/g,
+          ""
+        ).trim();
+
+
+      if (!title) {
+
+        title =
+          "AI 등록 일정";
+
+      }
+
+
+      var formattedDate =
+        targetDate.getFullYear() +
+        "-" +
+        String(
+          targetDate.getMonth() + 1
+        ).padStart(2, "0") +
+        "-" +
+        String(
+          targetDate.getDate()
+        ).padStart(2, "0");
+
+
+      currentEvents.push({
+
+        id:
+          "evt_ai_" +
+          Date.now(),
+
+        title: title,
+
+        date: formattedDate,
+
+        time: targetTime,
+
+        desc:
+          "내장 AI 자연어 분석 생성",
+
+        isAI: true
+
+      });
+
+
+      localStorage.setItem(
+        "win11_cal_events",
+        JSON.stringify(currentEvents)
+      );
+
+
+      renderCalendar();
+
+      renderTodayTasks();
+
+
+      setTimeout(function() {
+
+        appendChatMessage(
+          "assistant",
+          "말씀하신 일정을 캘린더에 바로 등록했습니다!<br><br>" +
+          "<div class='event-action-box'>" +
+          "<div>" +
+          "<span class='badge badge-ai'>등록 완료</span>" +
+          "<div style='font-weight:600;font-size:13px;margin-top:2px;'>" +
+          title +
+          "</div>" +
+          "<div style='font-size:11px;color:var(--text-muted);'>" +
+          formattedDate +
+          " " +
+          targetTime +
+          "</div>" +
+          "</div>" +
+          "<button class='btn-secondary' onclick=\"openWindow('win-calendar')\">확인</button>" +
+          "</div>"
+        );
+
+      }, 300);
+
+    }
+
+
+    function appendChatMessage(
+      role,
+      content
+    ) {
+
+      var container =
+        document.getElementById(
+          "ai-chat-messages"
+        );
+
+
+      var bubble =
+        document.createElement("div");
+
+
+      bubble.className =
+        "chat-msg " +
+        role;
+
+
+      bubble.innerHTML =
+        content;
+
+
+      container.appendChild(
+        bubble
+      );
+
+
+      container.scrollTop =
+        container.scrollHeight;
+
+    }
+
+
+    function clearAIChat() {
+
+      document.getElementById(
+        "ai-chat-messages"
+      ).innerHTML =
+        '<div class="chat-msg assistant">대화가 초기화되었습니다. 어떤 일정을 함께 계획해볼까요?</div>';
+
+    }
+
+
+    /* ==========================================
+       CLOCK
+    ========================================== */
+
+    function updateClock() {
+
+      var now =
+        new Date();
+
+
+      var hours =
+        now.getHours();
+
+
+      var minutes =
+        String(
+          now.getMinutes()
+        ).padStart(2, "0");
+
+
+      var ampm =
+        hours >= 12
+          ? "오후"
+          : "오전";
+
+
+      var displayHours =
+        hours % 12 || 12;
+
+
+      document.getElementById(
+        "tb-time"
+      ).innerText =
+        ampm +
+        " " +
+        displayHours +
+        ":" +
+        minutes;
+
+
+      var year =
+        now.getFullYear();
+
+
+      var month =
+        String(
+          now.getMonth() + 1
+        ).padStart(2, "0");
+
+
+      var day =
+        String(
+          now.getDate()
+        ).padStart(2, "0");
+
+
+      document.getElementById(
+        "tb-date"
+      ).innerText =
+        year +
+        "-" +
+        month +
+        "-" +
+        day;
+
+    }
+
+
+    /* ==========================================
+       START
+    ========================================== */
+
+    window.addEventListener(
+      "DOMContentLoaded",
+      function() {
+
+        initWindows();
+
+        renderCalendar();
+
+        renderTodayTasks();
+
+        updateClock();
+
+        updateTaskbar();
+
+
+        setInterval(
+          updateClock,
+          1000
+        );
+
+
+        var now =
+          new Date();
+
+
+        var todayStr =
+          now.getFullYear() +
+          "-" +
+          String(
+            now.getMonth() + 1
+          ).padStart(2, "0") +
+          "-" +
+          String(
+            now.getDate()
+          ).padStart(2, "0");
+
+
+        var mDate =
+          document.getElementById(
+            "manual-date"
+          );
+
+
+        if (mDate) {
+
+          mDate.value =
+            todayStr;
+
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+  </html>
