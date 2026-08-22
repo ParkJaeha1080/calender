@@ -1,0 +1,3841 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+
+<title>Windows 11 Family Calendar</title>
+
+<style>
+
+/* ==================================================
+   RESET
+================================================== */
+
+*{
+    box-sizing:border-box;
+}
+
+html,
+body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+
+    font-family:
+        "Segoe UI",
+        "Noto Sans KR",
+        sans-serif;
+
+    color:#fff;
+}
+
+button,
+input,
+textarea{
+    font-family:inherit;
+}
+
+
+/* ==================================================
+   DESKTOP
+================================================== */
+
+body{
+    background:
+        radial-gradient(
+            circle at 50% 10%,
+            #3b6fa8 0%,
+            #1b304c 42%,
+            #080d15 100%
+        );
+}
+
+.desktop{
+    position:fixed;
+    inset:0;
+}
+
+
+/* ==================================================
+   DESKTOP ICONS
+================================================== */
+
+.desktop-icons{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+}
+
+.desktop-icon{
+    position:absolute;
+
+    width:92px;
+    min-height:96px;
+
+    padding:9px 5px;
+
+    border-radius:8px;
+
+    text-align:center;
+    user-select:none;
+
+    pointer-events:auto;
+
+    touch-action:none;
+
+    cursor:default;
+
+    transition:
+        background .12s,
+        transform .12s;
+}
+
+.desktop-icon:hover{
+    background:rgba(255,255,255,.12);
+}
+
+.desktop-icon.dragging{
+    background:rgba(255,255,255,.18);
+    transform:scale(1.03);
+}
+
+.desktop-icon .emoji{
+    font-size:40px;
+    line-height:42px;
+
+    filter:
+        drop-shadow(
+            0 2px 4px
+            rgba(0,0,0,.35)
+        );
+}
+
+.desktop-icon .name{
+    margin-top:5px;
+
+    font-size:12px;
+    line-height:16px;
+
+    text-shadow:
+        0 1px 5px #000;
+
+    word-break:keep-all;
+}
+
+
+/* ==================================================
+   WINDOWS
+================================================== */
+
+.window{
+    position:absolute;
+
+    left:50%;
+    top:45%;
+
+    transform:
+        translate(-50%,-50%);
+
+    width:min(
+        930px,
+        calc(100vw - 30px)
+    );
+
+    height:min(
+        670px,
+        calc(100vh - 75px)
+    );
+
+    min-width:420px;
+    min-height:300px;
+
+    display:none;
+
+    flex-direction:column;
+
+    overflow:hidden;
+
+    background:
+        rgba(25,31,42,.92);
+
+    backdrop-filter:
+        blur(25px);
+
+    -webkit-backdrop-filter:
+        blur(25px);
+
+    border:
+        1px solid
+        rgba(255,255,255,.14);
+
+    border-radius:12px;
+
+    box-shadow:
+        0 30px 90px
+        rgba(0,0,0,.60);
+
+    /*
+       CSS 기본 resize.
+       실제 핸들은 아래 .resize-handle 사용
+    */
+    resize:none;
+
+    contain:layout paint;
+}
+
+.window.active{
+    display:flex;
+}
+
+.window.minimized{
+    display:none;
+}
+
+
+/* ==================================================
+   MAXIMIZED
+================================================== */
+
+.window.maximized{
+    left:8px !important;
+    top:8px !important;
+
+    width:
+        calc(100% - 16px) !important;
+
+    height:
+        calc(100% - 63px) !important;
+
+    min-width:0;
+    min-height:0;
+
+    transform:none !important;
+
+    border-radius:12px;
+
+    resize:none;
+}
+
+
+/* ==================================================
+   TITLE BAR
+================================================== */
+
+.titlebar{
+    height:48px;
+    flex-shrink:0;
+
+    display:flex;
+    align-items:center;
+
+    padding-left:15px;
+
+    background:
+        rgba(35,42,54,.78);
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.08);
+
+    cursor:default;
+
+    user-select:none;
+
+    touch-action:none;
+}
+
+.title{
+    display:flex;
+    align-items:center;
+
+    gap:10px;
+
+    flex:1;
+    min-width:0;
+
+    font-size:14px;
+    font-weight:500;
+}
+
+.title-icon{
+    font-size:21px;
+    flex-shrink:0;
+}
+
+.title-text{
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+}
+
+
+/* ==================================================
+   WINDOW BUTTONS
+================================================== */
+
+.window-buttons{
+    height:48px;
+
+    display:flex;
+    align-items:stretch;
+
+    flex-shrink:0;
+}
+
+.window-button{
+    width:46px;
+    height:48px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:14px;
+
+    cursor:pointer;
+
+    transition:
+        background .1s;
+}
+
+.window-button:hover{
+    background:
+        rgba(255,255,255,.10);
+}
+
+.window-button.close:hover{
+    background:#c42b1c;
+}
+
+.window-button.maximize{
+    font-size:15px;
+}
+
+.window-button.minimize{
+    font-size:16px;
+}
+
+
+/* ==================================================
+   WINDOW RESIZE HANDLE
+================================================== */
+
+.resize-handle{
+    position:absolute;
+
+    right:0;
+    bottom:0;
+
+    width:22px;
+    height:22px;
+
+    z-index:20;
+
+    cursor:nwse-resize;
+
+    touch-action:none;
+}
+
+.resize-handle::after{
+    content:"";
+
+    position:absolute;
+
+    right:5px;
+    bottom:5px;
+
+    width:9px;
+    height:9px;
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0 45%,
+            rgba(255,255,255,.65) 46% 52%,
+            transparent 53% 100%
+        );
+}
+
+
+/* ==================================================
+   AI CHAT
+================================================== */
+
+.chat{
+    flex:1;
+    min-height:0;
+
+    display:flex;
+    flex-direction:column;
+}
+
+.messages{
+    flex:1;
+    min-height:0;
+
+    overflow-y:auto;
+
+    padding:25px;
+
+    scrollbar-width:thin;
+}
+
+.message{
+    display:flex;
+    margin-bottom:18px;
+}
+
+.message.user{
+    justify-content:flex-end;
+}
+
+.bubble{
+    max-width:80%;
+
+    padding:13px 17px;
+
+    border-radius:14px;
+
+    line-height:1.5;
+
+    font-size:15px;
+
+    white-space:pre-wrap;
+
+    overflow-wrap:anywhere;
+}
+
+.message.ai .bubble{
+    background:#292f3a;
+}
+
+.message.user .bubble{
+    background:#1769d1;
+}
+
+
+/* ==================================================
+   INPUT
+================================================== */
+
+.input-area{
+    padding:14px;
+
+    background:
+        rgba(15,20,27,.92);
+
+    border-top:
+        1px solid
+        rgba(255,255,255,.08);
+}
+
+.input-box{
+    display:flex;
+    align-items:flex-end;
+
+    padding:6px;
+
+    background:#303742;
+
+    border-radius:10px;
+}
+
+#input{
+    flex:1;
+
+    min-height:42px;
+    max-height:130px;
+
+    padding:10px;
+
+    border:0;
+    outline:0;
+
+    resize:none;
+
+    background:transparent;
+
+    color:white;
+
+    font-size:15px;
+}
+
+#input::placeholder{
+    color:#aeb5c0;
+}
+
+.send{
+    width:45px;
+    height:42px;
+
+    flex-shrink:0;
+
+    border:0;
+    border-radius:8px;
+
+    background:#1769d1;
+
+    color:white;
+
+    font-size:20px;
+
+    cursor:pointer;
+}
+
+.send:hover{
+    background:#2685e7;
+}
+
+.send:disabled{
+    opacity:.5;
+    cursor:default;
+}
+
+
+/* ==================================================
+   CALENDAR
+================================================== */
+
+.calendar{
+    flex:1;
+    min-height:0;
+
+    overflow:auto;
+
+    padding:20px;
+}
+
+.calendar-header{
+    display:flex;
+
+    justify-content:space-between;
+    align-items:center;
+
+    margin-bottom:20px;
+}
+
+.calendar-header button{
+    padding:9px 15px;
+
+    border:0;
+    border-radius:7px;
+
+    background:#303742;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:14px;
+}
+
+.calendar-header button:hover{
+    background:#424b58;
+}
+
+.month-title{
+    font-size:25px;
+    font-weight:600;
+}
+
+.calendar-grid{
+    display:grid;
+
+    grid-template-columns:
+        repeat(7,minmax(0,1fr));
+
+    gap:6px;
+}
+
+.weekday{
+    padding:8px;
+
+    text-align:center;
+
+    color:#aaa;
+
+    font-size:13px;
+}
+
+.day{
+    min-height:90px;
+
+    padding:8px;
+
+    border-radius:8px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    cursor:pointer;
+
+    overflow:hidden;
+
+    transition:
+        background .12s,
+        transform .12s;
+}
+
+.day:hover{
+    background:
+        rgba(255,255,255,.10);
+
+    transform:translateY(-1px);
+}
+
+.day.today{
+    outline:
+        1px solid
+        rgba(60,150,255,.8);
+
+    background:
+        rgba(30,110,210,.13);
+}
+
+.day-number{
+    font-size:13px;
+    margin-bottom:2px;
+}
+
+.event{
+    margin-top:5px;
+
+    padding:4px 6px;
+
+    border-radius:5px;
+
+    background:#1769d1;
+
+    font-size:11px;
+    line-height:15px;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    cursor:pointer;
+}
+
+.event:hover{
+    background:#2685e7;
+}
+
+
+/* ==================================================
+   ADD EVENT MODAL
+================================================== */
+
+.event-modal{
+    position:fixed;
+
+    inset:0;
+
+    z-index:11000;
+
+    display:none;
+
+    align-items:center;
+    justify-content:center;
+
+    padding:20px;
+
+    background:
+        rgba(5,8,13,.62);
+
+    backdrop-filter:
+        blur(8px);
+
+    -webkit-backdrop-filter:
+        blur(8px);
+}
+
+.event-modal.show{
+    display:flex;
+}
+
+.event-card{
+    width:
+        min(460px,100%);
+
+    padding:24px;
+
+    background:
+        rgba(35,42,54,.97);
+
+    border:
+        1px solid
+        rgba(255,255,255,.15);
+
+    border-radius:15px;
+
+    box-shadow:
+        0 30px 90px
+        rgba(0,0,0,.65);
+}
+
+.event-card h2{
+    margin:
+        0 0 6px;
+}
+
+.event-date{
+    color:#aeb7c5;
+
+    font-size:14px;
+
+    margin-bottom:18px;
+}
+
+.form-label{
+    display:block;
+
+    margin:
+        12px 0 6px;
+
+    font-size:13px;
+
+    color:#c7ced8;
+}
+
+.event-input,
+.event-textarea{
+    width:100%;
+
+    padding:11px 12px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.13);
+
+    border-radius:8px;
+
+    outline:none;
+
+    background:#171c24;
+
+    color:#fff;
+
+    font-size:14px;
+}
+
+.event-input:focus,
+.event-textarea:focus{
+    border-color:#3989e8;
+}
+
+.event-textarea{
+    min-height:85px;
+
+    resize:vertical;
+}
+
+.event-buttons{
+    display:flex;
+
+    gap:8px;
+
+    margin-top:18px;
+}
+
+.event-buttons button{
+    flex:1;
+
+    padding:11px;
+
+    border:0;
+
+    border-radius:8px;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:14px;
+}
+
+.event-save{
+    background:#1769d1;
+}
+
+.event-save:hover{
+    background:#2685e7;
+}
+
+.event-cancel{
+    background:#303742;
+}
+
+.event-cancel:hover{
+    background:#424b58;
+}
+
+
+/* ==================================================
+   API SETUP
+================================================== */
+
+.setup{
+    position:fixed;
+
+    inset:0;
+
+    z-index:10000;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    background:
+        rgba(5,8,13,.85);
+
+    backdrop-filter:
+        blur(15px);
+
+    -webkit-backdrop-filter:
+        blur(15px);
+}
+
+.setup-card{
+    width:
+        min(500px,calc(100% - 30px));
+
+    padding:30px;
+
+    background:#252c37;
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    border-radius:15px;
+
+    box-shadow:
+        0 30px 80px
+        rgba(0,0,0,.6);
+}
+
+.setup-card h2{
+    margin-top:0;
+}
+
+.setup-card p{
+    color:#b8bec8;
+
+    font-size:14px;
+
+    line-height:1.5;
+}
+
+#apiKey{
+    width:100%;
+
+    padding:12px;
+
+    margin-top:8px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.15);
+
+    border-radius:8px;
+
+    outline:0;
+
+    background:#171c24;
+
+    color:white;
+
+    font-family:monospace;
+}
+
+.save-key{
+    width:100%;
+
+    margin-top:12px;
+
+    padding:12px;
+
+    border:0;
+
+    border-radius:8px;
+
+    background:#1769d1;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:15px;
+}
+
+.save-key:hover{
+    background:#2685e7;
+}
+
+.key-reset{
+    width:100%;
+
+    margin-top:8px;
+
+    padding:10px;
+
+    border:0;
+
+    border-radius:8px;
+
+    background:#303742;
+
+    color:white;
+
+    cursor:pointer;
+}
+
+
+/* ==================================================
+   TASKBAR
+================================================== */
+
+.taskbar{
+    position:fixed;
+
+    left:0;
+    right:0;
+    bottom:0;
+
+    height:55px;
+
+    z-index:9000;
+
+    display:flex;
+
+    justify-content:center;
+    align-items:center;
+
+    gap:5px;
+
+    background:
+        rgba(20,25,33,.84);
+
+    backdrop-filter:
+        blur(25px);
+
+    -webkit-backdrop-filter:
+        blur(25px);
+
+    border-top:
+        1px solid
+        rgba(255,255,255,.08);
+}
+
+.task-icon{
+    width:44px;
+    height:44px;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    border-radius:8px;
+
+    font-size:23px;
+
+    cursor:pointer;
+}
+
+.task-icon:hover{
+    background:
+        rgba(255,255,255,.12);
+}
+
+
+/* ==================================================
+   MOBILE
+================================================== */
+
+@media(max-width:600px){
+
+    .desktop-icon{
+        width:78px;
+        min-height:82px;
+    }
+
+    .desktop-icon .emoji{
+        font-size:34px;
+        line-height:37px;
+    }
+
+    .desktop-icon .name{
+        font-size:11px;
+    }
+
+
+    /*
+       세로 화면에서도
+       둥근 창 유지
+    */
+
+    .window{
+        left:8px;
+
+        top:8px;
+
+        width:
+            calc(100vw - 16px);
+
+        height:
+            calc(100vh - 71px);
+
+        min-width:0;
+        min-height:250px;
+
+        transform:none;
+
+        border-radius:14px;
+
+        resize:none;
+    }
+
+    .window.maximized{
+        left:8px !important;
+        top:8px !important;
+
+        width:
+            calc(100vw - 16px) !important;
+
+        height:
+            calc(100vh - 71px) !important;
+
+        border-radius:14px;
+    }
+
+
+    .resize-handle{
+        width:25px;
+        height:25px;
+    }
+
+
+    .bubble{
+        max-width:88%;
+    }
+
+    .day{
+        min-height:65px;
+        padding:6px;
+    }
+
+    .calendar{
+        padding:10px;
+    }
+
+    .calendar-grid{
+        gap:3px;
+    }
+
+    .weekday{
+        padding:5px 2px;
+    }
+
+    .month-title{
+        font-size:21px;
+    }
+
+    .window-button{
+        width:44px;
+    }
+}
+
+
+/* ==================================================
+   VERY SMALL SCREEN
+================================================== */
+
+@media(max-width:380px){
+
+    .window{
+        left:6px;
+
+        top:6px;
+
+        width:
+            calc(100vw - 12px);
+
+        height:
+            calc(100vh - 67px);
+
+        border-radius:13px;
+    }
+
+    .window-button{
+        width:40px;
+    }
+
+    .bubble{
+        font-size:14px;
+    }
+
+    .day{
+        min-height:55px;
+    }
+
+    .event{
+        font-size:10px;
+    }
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<!-- ==================================================
+     DESKTOP
+================================================== -->
+
+<div class="desktop">
+
+    <div class="desktop-icons">
+
+        <div
+            class="desktop-icon"
+            data-icon="ai"
+            style="left:20px;top:20px"
+        >
+            <div class="emoji">🤖</div>
+
+            <div class="name">
+                AI 일정 비서
+            </div>
+        </div>
+
+
+        <div
+            class="desktop-icon"
+            data-icon="calendar"
+            style="left:20px;top:125px"
+        >
+            <div class="emoji">📅</div>
+
+            <div class="name">
+                캘린더
+            </div>
+        </div>
+
+
+        <div
+            class="desktop-icon"
+            data-icon="settings"
+            style="left:20px;top:230px"
+        >
+            <div class="emoji">⚙️</div>
+
+            <div class="name">
+                환경 설정
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     AI WINDOW
+================================================== -->
+
+<div
+    id="aiWindow"
+    class="window"
+>
+
+    <div class="titlebar">
+
+        <div class="title">
+
+            <span class="title-icon">
+                🤖
+            </span>
+
+            <span class="title-text">
+                Gemini AI 일정 비서
+            </span>
+
+        </div>
+
+
+        <div class="window-buttons">
+
+            <div
+                class="window-button minimize"
+                data-action="minimize"
+            >
+                −
+            </div>
+
+            <div
+                class="window-button maximize"
+                data-action="maximize"
+            >
+                □
+            </div>
+
+            <div
+                class="window-button close"
+                data-action="close"
+            >
+                ✕
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="chat">
+
+        <div
+            id="messages"
+            class="messages"
+        ></div>
+
+
+        <div class="input-area">
+
+            <div class="input-box">
+
+                <textarea
+                    id="input"
+                    placeholder="Gemini에게 물어보세요..."
+                    onkeydown="handleEnter(event)"
+                ></textarea>
+
+                <button
+                    id="send"
+                    class="send"
+                    onclick="sendMessage()"
+                >
+                    ➤
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="resize-handle"></div>
+
+</div>
+
+
+<!-- ==================================================
+     CALENDAR WINDOW
+================================================== -->
+
+<div
+    id="calendarWindow"
+    class="window"
+>
+
+    <div class="titlebar">
+
+        <div class="title">
+
+            <span class="title-icon">
+                📅
+            </span>
+
+            <span class="title-text">
+                캘린더
+            </span>
+
+        </div>
+
+
+        <div class="window-buttons">
+
+            <div
+                class="window-button minimize"
+                data-action="minimize"
+            >
+                −
+            </div>
+
+            <div
+                class="window-button maximize"
+                data-action="maximize"
+            >
+                □
+            </div>
+
+            <div
+                class="window-button close"
+                data-action="close"
+            >
+                ✕
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="calendar">
+
+        <div class="calendar-header">
+
+            <button onclick="changeMonth(-1)">
+                ◀
+            </button>
+
+            <div
+                id="monthTitle"
+                class="month-title"
+            ></div>
+
+            <button onclick="changeMonth(1)">
+                ▶
+            </button>
+
+        </div>
+
+
+        <div
+            id="calendarGrid"
+            class="calendar-grid"
+        ></div>
+
+    </div>
+
+
+    <div class="resize-handle"></div>
+
+</div>
+
+
+<!-- ==================================================
+     ADD EVENT MODAL
+================================================== -->
+
+<div
+    id="eventModal"
+    class="event-modal"
+>
+
+    <div class="event-card">
+
+        <h2>
+            📅 일정 추가
+        </h2>
+
+        <div
+            id="eventDateText"
+            class="event-date"
+        ></div>
+
+
+        <label class="form-label">
+            일정 제목
+        </label>
+
+        <input
+            id="eventTitle"
+            class="event-input"
+            placeholder="예: 가족 외식"
+        >
+
+
+        <label class="form-label">
+            시간
+        </label>
+
+        <input
+            id="eventTime"
+            class="event-input"
+            type="time"
+        >
+
+
+        <label class="form-label">
+            설명
+        </label>
+
+        <textarea
+            id="eventDesc"
+            class="event-textarea"
+            placeholder="일정에 대한 설명"
+        ></textarea>
+
+
+        <label class="form-label">
+            작성자
+        </label>
+
+        <input
+            id="eventCreator"
+            class="event-input"
+            placeholder="예: 엄마"
+        >
+
+
+        <label class="form-label">
+            공유 대상
+        </label>
+
+        <div class="share-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; background: #171c24; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.13);">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="shareAll" value="전체" checked onchange="toggleShareAll(this)"> 전체 (가족 모두)
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; user-select: none;">
+                <input type="checkbox" class="share-member" value="엄마" onchange="toggleShareMember()"> 엄마
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; user-select: none;">
+                <input type="checkbox" class="share-member" value="아빠" onchange="toggleShareMember()"> 아빠
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; user-select: none;">
+                <input type="checkbox" class="share-member" value="아들" onchange="toggleShareMember()"> 아들
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; user-select: none;">
+                <input type="checkbox" class="share-member" value="딸" onchange="toggleShareMember()"> 딸
+            </label>
+        </div>
+
+
+        <div class="event-buttons">
+
+            <button
+                class="event-cancel"
+                onclick="closeEventModal()"
+            >
+                취소
+            </button>
+
+            <button
+                class="event-save"
+                onclick="saveManualEvent()"
+            >
+                일정 추가
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     GEMINI SETUP (Expanded Settings)
+================================================== -->
+
+<div
+    id="setup"
+    class="setup"
+>
+
+    <div class="setup-card" style="max-height: 90vh; overflow-y: auto;">
+
+        <h2>
+            ⚙️ 환경 설정 (Profile & API)
+        </h2>
+
+        <p style="margin-bottom: 20px;">
+            캘린더 및 AI 비서 작동에 필요한 정보들을 설정해 주세요.<br>
+            모든 설정은 이 브라우저의 localStorage에 안전하게 보관됩니다.
+        </p>
+
+
+        <!-- Profile Section -->
+        <div style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,.1); padding-bottom: 15px;">
+
+            <label class="form-label" style="font-weight: 600; font-size: 14px; color: #fff;">
+                👤 나의 호칭/이름
+            </label>
+
+            <p style="font-size: 12px; color: #aeb7c5; margin: 4px 0 8px;">
+                가족 캘린더에서 본인을 식별할 이름입니다. (예: 엄마, 아빠, 딸, 아들 등)
+            </p>
+
+            <input
+                id="myNameInput"
+                class="event-input"
+                placeholder="예: 엄마"
+                value="엄마"
+            >
+
+        </div>
+
+
+        <!-- Gemini API Section -->
+        <div style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,.1); padding-bottom: 15px;">
+
+            <label class="form-label" style="font-weight: 600; font-size: 14px; color: #fff;">
+                🤖 Gemini AI 설정
+            </label>
+
+            <p style="font-size: 12px; color: #aeb7c5; margin: 4px 0 8px;">
+                AI 일정 비서 기능을 사용하기 위해 Gemini API 키를 입력해주세요.
+            </p>
+
+            <input
+                id="apiKey"
+                type="password"
+                placeholder="Gemini API Key"
+                class="event-input"
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <!-- Firebase Section -->
+        <div style="margin-bottom: 20px; padding-bottom: 15px;">
+
+            <label class="form-label" style="font-weight: 600; font-size: 14px; color: #fff;">
+                🔥 Firebase 연동 (선택사항)
+            </label>
+
+            <p style="font-size: 12px; color: #aeb7c5; margin: 4px 0 8px;">
+                가족 간 실시간 일정 공유를 위해 Firebase Web SDK 설정 JSON을 입력해주세요. 비워두면 로컬 모드로 동작합니다.
+            </p>
+
+            <textarea
+                id="firebaseConfigInput"
+                class="event-textarea"
+                style="font-family: monospace; font-size: 12px; min-height: 120px;"
+                placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-app.firebaseapp.com",
+  "projectId": "your-app",
+  "storageBucket": "your-app.appspot.com",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'
+            ></textarea>
+
+        </div>
+
+
+        <button
+            class="save-key"
+            onclick="saveAllSettings()"
+        >
+            설정 저장하고 시작
+        </button>
+
+        <button
+            class="key-reset"
+            onclick="clearAllSettings()"
+            style="background: #c42b1c;"
+        >
+            모든 설정 및 저장값 초기화
+        </button>
+
+        <button
+            class="key-reset"
+            onclick="closeSetupModal()"
+            id="closeSetupBtn"
+            style="display: none; background: #303742; margin-top: 8px;"
+        >
+            닫기
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     TASKBAR
+================================================== -->
+
+<div class="taskbar">
+
+    <div
+        class="task-icon"
+        onclick="openWindow('aiWindow')"
+        title="AI 일정 비서"
+    >
+        🤖
+    </div>
+
+    <div
+        class="task-icon"
+        onclick="openWindow('calendarWindow')"
+        title="캘린더"
+    >
+        📅
+    </div>
+
+    <div
+        class="task-icon"
+        onclick="openSetupModal()"
+        title="환경 설정"
+    >
+        ⚙️
+    </div>
+
+</div>
+
+
+<!-- Firebase SDK (v9 compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script>
+
+/* ==================================================
+   STORAGE
+================================================== */
+
+const EVENT_STORAGE =
+    "windows11_calendar_events";
+
+const KEY_STORAGE =
+    "windows11_gemini_key";
+
+const ICON_STORAGE =
+    "windows11_desktop_icon_positions";
+
+const WINDOW_STORAGE =
+    "windows11_window_positions";
+
+
+/* ==================================================
+   DATA
+================================================== */
+
+let events = loadEvents();
+
+let currentMonth = new Date();
+
+let highestZ = 100;
+
+
+/* ==================================================
+   EVENTS
+================================================== */
+
+function loadEvents(){
+
+    try{
+
+        const data =
+            localStorage.getItem(
+                EVENT_STORAGE
+            );
+
+        const parsed =
+            JSON.parse(
+                data || "[]"
+            );
+
+        return Array.isArray(parsed)
+            ? parsed
+            : [];
+
+    }catch{
+
+        return [];
+
+    }
+
+}
+
+
+function saveEvents(){
+
+    localStorage.setItem(
+        EVENT_STORAGE,
+        JSON.stringify(events)
+    );
+
+}
+
+
+/* ==================================================
+   SETTINGS & FIREBASE LOGIC
+================================================== */
+
+const CONFIG_STORAGE = "windows11_app_config";
+let db = null;
+let myName = localStorage.getItem("windows11_my_name") || "나";
+
+function openSetupModal() {
+    document.getElementById("setup").style.display = "flex";
+    if (getApiKey() || localStorage.getItem(CONFIG_STORAGE)) {
+        document.getElementById("closeSetupBtn").style.display = "block";
+    }
+}
+
+function closeSetupModal() {
+    document.getElementById("setup").style.display = "none";
+}
+
+function saveAllSettings() {
+    const key = document.getElementById("apiKey").value.trim();
+    const config = document.getElementById("firebaseConfigInput").value.trim();
+    const name = document.getElementById("myNameInput").value.trim();
+
+    if (!key) {
+        alert("Gemini API 키를 입력해주세요.");
+        return;
+    }
+
+    localStorage.setItem(KEY_STORAGE, key);
+    localStorage.setItem("windows11_my_name", name);
+    myName = name;
+
+    if (config) {
+        try {
+            const configObj = JSON.parse(config);
+            localStorage.setItem(CONFIG_STORAGE, config);
+            initFirebase(configObj);
+        } catch (e) {
+            alert("Firebase 설정 JSON 형식이 올바르지 않습니다.");
+            return;
+        }
+    } else {
+        localStorage.removeItem(CONFIG_STORAGE);
+        db = null;
+    }
+
+    alert("설정이 저장되었습니다.");
+    closeSetupModal();
+    if (!document.getElementById("calendarWindow").classList.contains("active")) {
+        openWindow("aiWindow");
+    }
+}
+
+function clearAllSettings() {
+    localStorage.removeItem(KEY_STORAGE);
+    localStorage.removeItem(CONFIG_STORAGE);
+    localStorage.removeItem("windows11_my_name");
+    localStorage.removeItem(EVENT_STORAGE);
+    location.reload();
+}
+
+function initFirebase(config) {
+    if (!firebase.apps.length) {
+        firebase.initializeApp(config);
+    }
+    db = firebase.firestore();
+    // In a real app, you would set up snapshots here to sync events
+}
+
+// Auto-init on load if config exists
+const savedConfig = localStorage.getItem(CONFIG_STORAGE);
+if (savedConfig) {
+    initFirebase(JSON.parse(savedConfig));
+}
+
+
+/* ==================================================
+   SHARE UI LOGIC
+================================================== */
+
+function toggleShareAll(checkbox) {
+    const members = document.querySelectorAll(".share-member");
+    members.forEach(m => m.checked = !checkbox.checked);
+}
+
+function toggleShareMember() {
+    document.getElementById("shareAll").checked = false;
+}
+
+
+
+/* ==================================================
+   WINDOWS
+================================================== */
+
+function openWindow(id){
+
+    const win =
+        document.getElementById(id);
+
+    if(!win)
+        return;
+
+    win.classList.add("active");
+
+    win.classList.remove("minimized");
+
+    bringToFront(win);
+
+}
+
+
+function closeWindow(id){
+
+    const win =
+        document.getElementById(id);
+
+    if(!win)
+        return;
+
+    win.classList.remove("active");
+
+    win.classList.remove("minimized");
+
+}
+
+
+function minimizeWindow(win){
+
+    win.classList.remove("active");
+
+    win.classList.add("minimized");
+
+}
+
+
+function bringToFront(win){
+
+    highestZ++;
+
+    win.style.zIndex =
+        highestZ;
+
+}
+
+
+/* ==================================================
+   MAXIMIZE / RESTORE
+================================================== */
+
+function maximizeWindow(win){
+
+    if(
+        win.classList.contains("maximized")
+    ){
+
+        restoreWindow(win);
+
+        return;
+
+    }
+
+
+    const rect =
+        win.getBoundingClientRect();
+
+
+    win.dataset.restoreLeft =
+        rect.left;
+
+    win.dataset.restoreTop =
+        rect.top;
+
+    win.dataset.restoreWidth =
+        rect.width;
+
+    win.dataset.restoreHeight =
+        rect.height;
+
+
+    win.classList.add("maximized");
+
+    bringToFront(win);
+
+}
+
+
+function restoreWindow(win){
+
+    win.classList.remove("maximized");
+
+
+    if(win.dataset.restoreWidth){
+
+        win.style.width =
+            win.dataset.restoreWidth + "px";
+
+        win.style.height =
+            win.dataset.restoreHeight + "px";
+
+        win.style.left =
+            win.dataset.restoreLeft + "px";
+
+        win.style.top =
+            win.dataset.restoreTop + "px";
+
+        win.style.transform =
+            "none";
+
+    }
+
+}
+
+
+/* ==================================================
+   WINDOW BUTTONS
+================================================== */
+
+document
+    .querySelectorAll(".window")
+    .forEach(win => {
+
+        win.addEventListener(
+            "pointerdown",
+            () => {
+
+                bringToFront(win);
+
+            },
+            {passive:true}
+        );
+
+
+        win
+            .querySelectorAll(".window-button")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "pointerdown",
+                    e => {
+
+                        e.stopPropagation();
+
+                    }
+                );
+
+
+                button.addEventListener(
+                    "click",
+                    e => {
+
+                        e.stopPropagation();
+
+
+                        const action =
+                            button.dataset.action;
+
+
+                        if(action === "close"){
+
+                            closeWindow(win.id);
+
+                        }
+
+                        else if(
+                            action === "minimize"
+                        ){
+
+                            minimizeWindow(win);
+
+                        }
+
+                        else if(
+                            action === "maximize"
+                        ){
+
+                            maximizeWindow(win);
+
+                        }
+
+                    }
+                );
+
+            });
+
+    });
+
+
+/* ==================================================
+   WINDOW DRAG
+   끊김 방지 버전
+================================================== */
+
+document
+    .querySelectorAll(".window")
+    .forEach(win => {
+
+        const titlebar =
+            win.querySelector(".titlebar");
+
+        let dragging = false;
+
+        let startX = 0;
+        let startY = 0;
+
+        let startLeft = 0;
+        let startTop = 0;
+
+
+        titlebar.addEventListener(
+            "pointerdown",
+            e => {
+
+                if(
+                    e.target.closest(
+                        ".window-button"
+                    )
+                ){
+
+                    return;
+
+                }
+
+
+                if(
+                    win.classList.contains(
+                        "maximized"
+                    )
+                ){
+
+                    return;
+
+                }
+
+
+                const rect =
+                    win.getBoundingClientRect();
+
+
+                /*
+                   transform 제거 후
+                   현재 화면 좌표 유지
+                */
+
+                win.style.left =
+                    rect.left + "px";
+
+                win.style.top =
+                    rect.top + "px";
+
+                win.style.transform =
+                    "none";
+
+
+                startX =
+                    e.clientX;
+
+                startY =
+                    e.clientY;
+
+                startLeft =
+                    rect.left;
+
+                startTop =
+                    rect.top;
+
+
+                dragging = true;
+
+
+                bringToFront(win);
+
+
+                try{
+
+                    titlebar.setPointerCapture(
+                        e.pointerId
+                    );
+
+                }catch{}
+
+
+                document.body.style.userSelect =
+                    "none";
+
+
+                e.preventDefault();
+
+            }
+        );
+
+
+        titlebar.addEventListener(
+            "pointermove",
+            e => {
+
+                if(!dragging)
+                    return;
+
+
+                const dx =
+                    e.clientX - startX;
+
+                const dy =
+                    e.clientY - startY;
+
+
+                let x =
+                    startLeft + dx;
+
+                let y =
+                    startTop + dy;
+
+
+                const rect =
+                    win.getBoundingClientRect();
+
+
+                const visible =
+                    70;
+
+
+                const minX =
+                    -rect.width + visible;
+
+                const maxX =
+                    window.innerWidth -
+                    visible;
+
+                const minY =
+                    0;
+
+                const maxY =
+                    window.innerHeight -
+                    55 -
+                    35;
+
+
+                x =
+                    Math.max(
+                        minX,
+                        Math.min(
+                            x,
+                            maxX
+                        )
+                    );
+
+
+                y =
+                    Math.max(
+                        minY,
+                        Math.min(
+                            y,
+                            maxY
+                        )
+                    );
+
+
+                /*
+                   transform 없이
+                   직접 이동
+                */
+
+                win.style.left =
+                    x + "px";
+
+                win.style.top =
+                    y + "px";
+
+            }
+        );
+
+
+        function stopDragging(e){
+
+            if(!dragging)
+                return;
+
+
+            dragging = false;
+
+
+            try{
+
+                titlebar.releasePointerCapture(
+                    e.pointerId
+                );
+
+            }catch{}
+
+
+            document.body.style.userSelect =
+                "";
+
+
+            saveWindowPosition(win);
+
+        }
+
+
+        titlebar.addEventListener(
+            "pointerup",
+            stopDragging
+        );
+
+
+        titlebar.addEventListener(
+            "pointercancel",
+            e => {
+
+                dragging = false;
+
+                document.body.style.userSelect =
+                    "";
+
+            }
+        );
+
+    });
+
+
+/* ==================================================
+   WINDOW RESIZE
+================================================== */
+
+document
+    .querySelectorAll(".window")
+    .forEach(win => {
+
+        const handle =
+            win.querySelector(
+                ".resize-handle"
+            );
+
+
+        let resizing = false;
+
+        let startX = 0;
+        let startY = 0;
+
+        let startWidth = 0;
+        let startHeight = 0;
+
+
+        handle.addEventListener(
+            "pointerdown",
+            e => {
+
+                if(
+                    win.classList.contains(
+                        "maximized"
+                    )
+                ){
+
+                    return;
+
+                }
+
+
+                const rect =
+                    win.getBoundingClientRect();
+
+
+                resizing = true;
+
+
+                startX =
+                    e.clientX;
+
+                startY =
+                    e.clientY;
+
+                startWidth =
+                    rect.width;
+
+                startHeight =
+                    rect.height;
+
+
+                bringToFront(win);
+
+
+                try{
+
+                    handle.setPointerCapture(
+                        e.pointerId
+                    );
+
+                }catch{}
+
+
+                document.body.style.userSelect =
+                    "none";
+
+                e.preventDefault();
+
+                e.stopPropagation();
+
+            }
+        );
+
+
+        handle.addEventListener(
+            "pointermove",
+            e => {
+
+                if(!resizing)
+                    return;
+
+
+                const dx =
+                    e.clientX - startX;
+
+                const dy =
+                    e.clientY - startY;
+
+
+                const minWidth =
+                    window.innerWidth <= 600
+                    ? 260
+                    : 420;
+
+
+                const minHeight =
+                    250;
+
+
+                const maxWidth =
+                    window.innerWidth -
+                    16;
+
+
+                const maxHeight =
+                    window.innerHeight -
+                    70;
+
+
+                let width =
+                    startWidth + dx;
+
+                let height =
+                    startHeight + dy;
+
+
+                width =
+                    Math.max(
+                        minWidth,
+                        Math.min(
+                            width,
+                            maxWidth
+                        )
+                    );
+
+
+                height =
+                    Math.max(
+                        minHeight,
+                        Math.min(
+                            height,
+                            maxHeight
+                        )
+                    );
+
+
+                win.style.width =
+                    width + "px";
+
+                win.style.height =
+                    height + "px";
+
+
+                win.style.transform =
+                    "none";
+
+            }
+        );
+
+
+        function stopResize(e){
+
+            if(!resizing)
+                return;
+
+
+            resizing = false;
+
+
+            try{
+
+                handle.releasePointerCapture(
+                    e.pointerId
+                );
+
+            }catch{}
+
+
+            document.body.style.userSelect =
+                "";
+
+
+            saveWindowPosition(win);
+
+        }
+
+
+        handle.addEventListener(
+            "pointerup",
+            stopResize
+        );
+
+
+        handle.addEventListener(
+            "pointercancel",
+            stopResize
+        );
+
+    });
+
+
+/* ==================================================
+   WINDOW STORAGE
+================================================== */
+
+function saveWindowPosition(win){
+
+    if(
+        win.classList.contains(
+            "maximized"
+        )
+    ){
+
+        return;
+
+    }
+
+
+    const rect =
+        win.getBoundingClientRect();
+
+
+    let positions;
+
+
+    try{
+
+        positions =
+            JSON.parse(
+                localStorage.getItem(
+                    WINDOW_STORAGE
+                ) || "{}"
+            );
+
+    }catch{
+
+        positions = {};
+
+    }
+
+
+    positions[win.id] = {
+
+        left:
+            rect.left,
+
+        top:
+            rect.top,
+
+        width:
+            rect.width,
+
+        height:
+            rect.height
+
+    };
+
+
+    localStorage.setItem(
+        WINDOW_STORAGE,
+        JSON.stringify(
+            positions
+        )
+    );
+
+}
+
+
+function restoreSavedWindows(){
+
+    if(
+        window.innerWidth <= 600
+    ){
+
+        return;
+
+    }
+
+
+    let positions;
+
+
+    try{
+
+        positions =
+            JSON.parse(
+                localStorage.getItem(
+                    WINDOW_STORAGE
+                ) || "{}"
+            );
+
+    }catch{
+
+        positions = {};
+
+    }
+
+
+    document
+        .querySelectorAll(".window")
+        .forEach(win => {
+
+            const data =
+                positions[win.id];
+
+
+            if(!data)
+                return;
+
+
+            if(
+                typeof data.left !==
+                "number"
+            )
+                return;
+
+
+            if(
+                typeof data.top !==
+                "number"
+            )
+                return;
+
+
+            win.style.left =
+                data.left + "px";
+
+            win.style.top =
+                data.top + "px";
+
+
+            if(data.width){
+
+                win.style.width =
+                    data.width + "px";
+
+            }
+
+
+            if(data.height){
+
+                win.style.height =
+                    data.height + "px";
+
+            }
+
+
+            win.style.transform =
+                "none";
+
+        });
+
+}
+
+
+restoreSavedWindows();
+
+
+/* ==================================================
+   DESKTOP ICON DRAG
+================================================== */
+
+let iconPositions;
+
+
+try{
+
+    iconPositions =
+        JSON.parse(
+            localStorage.getItem(
+                ICON_STORAGE
+            ) || "{}"
+        );
+
+}catch{
+
+    iconPositions = {};
+
+}
+
+
+document
+    .querySelectorAll(".desktop-icon")
+    .forEach(icon => {
+
+        const id =
+            icon.dataset.icon;
+
+
+        if(iconPositions[id]){
+
+            icon.style.left =
+                iconPositions[id].x + "px";
+
+            icon.style.top =
+                iconPositions[id].y + "px";
+
+        }
+
+
+        let dragging = false;
+        let moved = false;
+
+        let startX = 0;
+        let startY = 0;
+
+        let startLeft = 0;
+        let startTop = 0;
+
+
+        icon.addEventListener(
+            "pointerdown",
+            e => {
+
+                if(e.button !== 0)
+                    return;
+
+
+                dragging = true;
+                moved = false;
+
+
+                startX =
+                    e.clientX;
+
+                startY =
+                    e.clientY;
+
+
+                startLeft =
+                    parseFloat(
+                        icon.style.left
+                    ) || 0;
+
+
+                startTop =
+                    parseFloat(
+                        icon.style.top
+                    ) || 0;
+
+
+                icon.classList.add(
+                    "dragging"
+                );
+
+
+                try{
+
+                    icon.setPointerCapture(
+                        e.pointerId
+                    );
+
+                }catch{}
+
+
+                e.preventDefault();
+
+            }
+        );
+
+
+        icon.addEventListener(
+            "pointermove",
+            e => {
+
+                if(!dragging)
+                    return;
+
+
+                const dx =
+                    e.clientX - startX;
+
+                const dy =
+                    e.clientY - startY;
+
+
+                if(
+                    Math.abs(dx) > 4 ||
+                    Math.abs(dy) > 4
+                ){
+
+                    moved = true;
+
+                }
+
+
+                let x =
+                    startLeft + dx;
+
+                let y =
+                    startTop + dy;
+
+
+                const maxX =
+                    window.innerWidth -
+                    icon.offsetWidth;
+
+
+                const maxY =
+                    window.innerHeight -
+                    55 -
+                    icon.offsetHeight;
+
+
+                x =
+                    Math.max(
+                        0,
+                        Math.min(
+                            x,
+                            maxX
+                        )
+                    );
+
+
+                y =
+                    Math.max(
+                        0,
+                        Math.min(
+                            y,
+                            maxY
+                        )
+                    );
+
+
+                icon.style.left =
+                    x + "px";
+
+                icon.style.top =
+                    y + "px";
+
+            }
+        );
+
+
+        icon.addEventListener(
+            "pointerup",
+            e => {
+
+                if(!dragging)
+                    return;
+
+
+                dragging = false;
+
+
+                icon.classList.remove(
+                    "dragging"
+                );
+
+
+                try{
+
+                    icon.releasePointerCapture(
+                        e.pointerId
+                    );
+
+                }catch{}
+
+
+                const x =
+                    parseFloat(
+                        icon.style.left
+                    ) || 0;
+
+                const y =
+                    parseFloat(
+                        icon.style.top
+                    ) || 0;
+
+
+                iconPositions[id] = {
+                    x,
+                    y
+                };
+
+
+                localStorage.setItem(
+                    ICON_STORAGE,
+                    JSON.stringify(
+                        iconPositions
+                    )
+                );
+
+
+                if(!moved){
+
+                    if(id === "ai"){
+
+                        openWindow(
+                            "aiWindow"
+                        );
+
+                    }
+
+                    if(id === "calendar"){
+
+                        openWindow(
+                            "calendarWindow"
+                        );
+
+                    }
+
+                    if(id === "settings"){
+
+                        openSetupModal();
+
+                    }
+
+                }
+
+            }
+        );
+
+
+        icon.addEventListener(
+            "pointercancel",
+            () => {
+
+                dragging = false;
+
+                icon.classList.remove(
+                    "dragging"
+                );
+
+            }
+        );
+
+    });
+
+
+/* ==================================================
+   AI CHAT
+================================================== */
+
+function addMessage(
+    text,
+    type
+){
+
+    const messages =
+        document.getElementById(
+            "messages"
+        );
+
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+
+    row.className =
+        "message " + type;
+
+
+    const bubble =
+        document.createElement(
+            "div"
+        );
+
+
+    bubble.className =
+        "bubble";
+
+
+    bubble.textContent =
+        text;
+
+
+    row.appendChild(
+        bubble
+    );
+
+
+    messages.appendChild(
+        row
+    );
+
+
+    messages.scrollTop =
+        messages.scrollHeight;
+
+
+    return row;
+
+}
+
+
+addMessage(
+`안녕하세요! 👋
+
+Gemini 기반 AI 일정 비서입니다.
+
+자연스럽게 말하면 일정으로 만들어 드릴게요.
+
+예:
+• 내일 오후 4시 수학 공부 추가해줘
+• 8월 30일 오후 7시 가족 외식
+• 오늘 일정 보여줘
+• 오늘 일정 전부 삭제해줘
+• 내일 수학 공부 삭제해줘
+
+또는 캘린더에서 날짜를 클릭하면
+그 날짜에 직접 일정을 추가할 수 있습니다!`,
+"ai"
+);
+
+
+/* ==================================================
+   ENTER
+================================================== */
+
+function handleEnter(event){
+
+    if(
+        event.key === "Enter" &&
+        !event.shiftKey
+    ){
+
+        event.preventDefault();
+
+        sendMessage();
+
+    }
+
+}
+
+
+/* ==================================================
+   GEMINI
+================================================== */
+
+async function sendMessage(){
+
+    const input =
+        document.getElementById(
+            "input"
+        );
+
+
+    const send =
+        document.getElementById(
+            "send"
+        );
+
+
+    const message =
+        input.value.trim();
+
+
+    if(!message)
+        return;
+
+
+    const key =
+        getApiKey();
+
+
+    if(!key){
+
+        document
+            .getElementById("setup")
+            .style.display =
+            "flex";
+
+        return;
+
+    }
+
+
+    addMessage(
+        message,
+        "user"
+    );
+
+
+    input.value = "";
+
+    send.disabled = true;
+
+
+    const loading =
+        addMessage(
+            "Gemini가 생각 중...",
+            "ai"
+        );
+
+
+    try{
+
+        const now =
+            new Date();
+
+
+        const prompt =
+`
+너는 Windows 11 캘린더의 Gemini AI 일정 비서다.
+
+현재 한국 시간:
+${now.toLocaleString(
+    "ko-KR",
+    {
+        timeZone:"Asia/Seoul"
+    }
+)}
+
+현재 저장된 일정:
+${JSON.stringify(events)}
+
+사용자 요청:
+${message}
+
+반드시 JSON 하나만 반환해라.
+
+일정 추가:
+
+{
+  "action":"add",
+  "title":"제목",
+  "date":"YYYY-MM-DD",
+  "time":"HH:MM",
+  "desc":"설명",
+  "reply":"사용자에게 보여줄 답변"
+}
+
+일정 삭제:
+
+{
+  "action":"delete",
+  "eventIds":["실제 일정 ID"],
+  "reply":"사용자에게 보여줄 답변"
+}
+
+일반 대화:
+
+{
+  "action":"chat",
+  "reply":"답변"
+}
+
+규칙:
+
+- 오늘/내일/모레는 현재 한국 날짜 기준으로 계산한다.
+- 일정 추가 요청은 add.
+- 일정 삭제 요청은 delete.
+- 오늘 일정 전부 삭제는 오늘 날짜의 모든 일정 ID를 반환한다.
+- 내일 일정 전부 삭제는 내일 날짜의 모든 일정 ID를 반환한다.
+- 삭제 ID는 반드시 현재 저장된 일정의 실제 ID만 사용한다.
+- 일정 조회 요청은 chat으로 답한다.
+- 존재하지 않는 일정 삭제 요청은 chat으로 답한다.
+- 특정 일정 삭제는 현재 일정 목록의 제목/날짜/시간을 비교한다.
+- JSON 외의 문자는 출력하지 않는다.
+`;
+
+
+        /*
+           Gemini 3.6 Flash
+        */
+
+        const response =
+            await fetch(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" +
+                encodeURIComponent(key),
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            contents:[
+                                {
+                                    role:"user",
+
+                                    parts:[
+                                        {
+                                            text:prompt
+                                        }
+                                    ]
+                                }
+                            ],
+
+                            generationConfig:{
+
+                                responseMimeType:
+                                    "application/json"
+
+                            }
+
+                        })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(!response.ok){
+
+            throw new Error(
+                data?.error?.message ||
+                "Gemini API 오류"
+            );
+
+        }
+
+
+        const resultText =
+            data
+                ?.candidates?.[0]
+                ?.content?.parts?.[0]
+                ?.text;
+
+
+        if(!resultText){
+
+            throw new Error(
+                "Gemini 응답이 없습니다."
+            );
+
+        }
+
+
+        let result;
+
+
+        try{
+
+            result =
+                JSON.parse(
+                    resultText
+                );
+
+        }catch{
+
+            /*
+               혹시 ```json 으로 반환되면
+               코드 블록 제거 후 다시 파싱
+            */
+
+            const cleaned =
+                resultText
+                    .replace(
+                        /^```json\s*/i,
+                        ""
+                    )
+                    .replace(
+                        /\s*```$/i,
+                        ""
+                    )
+                    .trim();
+
+
+            result =
+                JSON.parse(
+                    cleaned
+                );
+
+        }
+
+
+        loading.remove();
+
+
+        /* ==================================================
+           ADD
+        ================================================== */
+
+        if(
+            result.action === "add"
+        ){
+
+            if(
+                !result.title ||
+                !result.date
+            ){
+
+                throw new Error(
+                    "Gemini가 올바른 일정 정보를 반환하지 않았습니다."
+                );
+
+            }
+
+
+            const event = {
+
+                id:
+                    crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : Date.now() +
+                      "-" +
+                      Math.random(),
+
+                title:
+                    result.title,
+
+                date:
+                    result.date,
+
+                time:
+                    result.time || "",
+
+                desc:
+                    result.desc || "",
+
+                isAI:
+                    true
+
+            };
+
+
+            events.push(
+                event
+            );
+
+
+            saveEvents();
+
+            renderCalendar();
+
+
+            addMessage(
+                result.reply ||
+                `✅ ${event.title} 일정을 추가했습니다.`,
+                "ai"
+            );
+
+        }
+
+
+        /* ==================================================
+           DELETE
+        ================================================== */
+
+        else if(
+            result.action === "delete"
+        ){
+
+            const ids =
+                Array.isArray(
+                    result.eventIds
+                )
+                ? result.eventIds
+                : [];
+
+
+            const before =
+                events.length;
+
+
+            events =
+                events.filter(
+                    event =>
+                        !ids.includes(
+                            event.id
+                        )
+                );
+
+
+            const deleted =
+                before -
+                events.length;
+
+
+            saveEvents();
+
+            renderCalendar();
+
+
+            addMessage(
+                result.reply ||
+                (
+                    deleted
+                    ? `🗑️ ${deleted}개의 일정을 삭제했습니다.`
+                    : "삭제할 일정을 찾지 못했습니다."
+                ),
+                "ai"
+            );
+
+        }
+
+
+        /* ==================================================
+           CHAT
+        ================================================== */
+
+        else{
+
+            addMessage(
+                result.reply ||
+                "알겠습니다.",
+                "ai"
+            );
+
+        }
+
+
+    }catch(error){
+
+        loading.remove();
+
+
+        addMessage(
+            "❌ 오류가 발생했습니다.\n\n" +
+            error.message,
+            "ai"
+        );
+
+    }
+
+
+    send.disabled = false;
+
+    input.focus();
+
+}
+
+
+/* ==================================================
+   CALENDAR MONTH
+================================================== */
+
+function changeMonth(amount){
+
+    currentMonth.setMonth(
+        currentMonth.getMonth() +
+        amount
+    );
+
+    renderCalendar();
+
+}
+
+
+/* ==================================================
+   DATE CLICK
+================================================== */
+
+let selectedDate = "";
+
+
+function openEventModal(date){
+
+    selectedDate =
+        date;
+
+
+    document
+        .getElementById(
+            "eventDateText"
+        )
+        .textContent =
+        formatKoreanDate(date);
+
+
+    document
+        .getElementById(
+            "eventTitle"
+        )
+        .value = "";
+
+
+    document
+        .getElementById(
+            "eventTime"
+        )
+        .value = "";
+
+
+    document
+        .getElementById(
+            "eventDesc"
+        )
+        .value = "";
+
+
+    document
+        .getElementById(
+            "eventModal"
+        )
+        .classList.add(
+            "show"
+        );
+
+
+    setTimeout(
+        () => {
+
+            document
+                .getElementById(
+                    "eventTitle"
+                )
+                .focus();
+
+        },
+        50
+    );
+
+}
+
+
+function closeEventModal(){
+
+    document
+        .getElementById(
+            "eventModal"
+        )
+        .classList.remove(
+            "show"
+        );
+
+}
+
+
+function formatKoreanDate(date){
+
+    const parts =
+        date.split("-");
+
+
+    return `${parts[0]}년 ${Number(parts[1])}월 ${Number(parts[2])}일`;
+
+}
+
+
+/* ==================================================
+   MANUAL EVENT
+================================================== */
+
+function saveManualEvent(){
+
+    const title =
+        document
+            .getElementById(
+                "eventTitle"
+            )
+            .value
+            .trim();
+
+
+    const time =
+        document
+            .getElementById(
+                "eventTime"
+            )
+            .value;
+
+
+    const desc =
+        document
+            .getElementById(
+                "eventDesc"
+            )
+            .value
+            .trim();
+    
+    const creator =
+        document
+            .getElementById(
+                "eventCreator"
+            )
+            .value
+            .trim() || myName;
+            
+    const shareAll = document.getElementById("shareAll").checked;
+    const shareMembers = shareAll ? ["전체"] : 
+        Array.from(document.querySelectorAll(".share-member:checked")).map(c => c.value);
+
+
+    if(!title){
+
+        alert(
+            "일정 제목을 입력해주세요."
+        );
+
+        return;
+
+    }
+
+
+    const event = {
+
+        id:
+            crypto.randomUUID
+            ? crypto.randomUUID()
+            : Date.now() +
+              "-" +
+              Math.random(),
+
+        title:
+            title,
+
+        date:
+            selectedDate,
+
+        time:
+            time || "",
+
+        desc:
+            desc || "",
+            
+        creator: creator,
+        sharedWith: shareMembers,
+
+        isAI:
+            false
+
+    };
+
+
+    events.push(
+        event
+    );
+
+    // Firebase Sync
+    if (db) {
+        db.collection("events").add(event)
+            .catch(err => console.error("Firebase save error:", err));
+    }
+
+
+    saveEvents();
+
+    renderCalendar();
+
+    closeEventModal();
+
+
+    addMessage(
+        `📅 ${formatKoreanDate(selectedDate)}에 "${title}" 일정을 추가했습니다.`,
+        "ai"
+    );
+
+}
+
+
+/* ==================================================
+   CALENDAR RENDER
+================================================== */
+
+function renderCalendar(){
+
+    const grid =
+        document.getElementById(
+            "calendarGrid"
+        );
+
+
+    const title =
+        document.getElementById(
+            "monthTitle"
+        );
+
+
+    const year =
+        currentMonth.getFullYear();
+
+
+    const month =
+        currentMonth.getMonth();
+
+
+    title.textContent =
+        `${year}년 ${month + 1}월`;
+
+
+    grid.innerHTML = "";
+
+
+    const weekdays = [
+        "일",
+        "월",
+        "화",
+        "수",
+        "목",
+        "금",
+        "토"
+    ];
+
+
+    weekdays.forEach(day => {
+
+        const element =
+            document.createElement(
+                "div"
+            );
+
+        element.className =
+            "weekday";
+
+        element.textContent =
+            day;
+
+        grid.appendChild(
+            element
+        );
+
+    });
+
+
+    const firstDay =
+        new Date(
+            year,
+            month,
+            1
+        ).getDay();
+
+
+    const days =
+        new Date(
+            year,
+            month + 1,
+            0
+        ).getDate();
+
+
+    for(
+        let i = 0;
+        i < firstDay;
+        i++
+    ){
+
+        grid.appendChild(
+            document.createElement(
+                "div"
+            )
+        );
+
+    }
+
+
+    const today =
+        new Date();
+
+
+    const todayString =
+        `${today.getFullYear()}-` +
+        `${String(
+            today.getMonth()+1
+        ).padStart(2,"0")}-` +
+        `${String(
+            today.getDate()
+        ).padStart(2,"0")}`;
+
+
+    for(
+        let day = 1;
+        day <= days;
+        day++
+    ){
+
+        const cell =
+            document.createElement(
+                "div"
+            );
+
+
+        cell.className =
+            "day";
+
+
+        const date =
+            `${year}-` +
+            `${String(
+                month + 1
+            ).padStart(2,"0")}-` +
+            `${String(
+                day
+            ).padStart(2,"0")}`;
+
+
+        if(
+            date === todayString
+        ){
+
+            cell.classList.add(
+                "today"
+            );
+
+        }
+
+
+        const number =
+            document.createElement(
+                "div"
+            );
+
+
+        number.className =
+            "day-number";
+
+
+        number.textContent =
+            day;
+
+
+        cell.appendChild(
+            number
+        );
+
+
+        /*
+           날짜 자체를 클릭하면
+           해당 날짜 일정 추가
+        */
+
+        cell.addEventListener(
+            "click",
+            () => {
+
+                openEventModal(
+                    date
+                );
+
+            }
+        );
+
+
+        events
+            .filter(
+                event =>
+                    event.date === date
+            )
+            .forEach(
+                event => {
+
+                    const element =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    element.className =
+                        "event";
+
+
+                    element.textContent =
+                        `${event.time || ""} ${event.title}`;
+
+
+                    element.title =
+                        event.desc || "";
+
+
+                    element.onclick =
+                    function(e){
+
+                        e.stopPropagation();
+
+
+                        const yes =
+                            confirm(
+                                `${event.title}\n\n` +
+                                `${event.date} ${event.time || ""}\n\n` +
+                                `${event.desc || ""}\n\n` +
+                                `이 일정을 삭제할까요?`
+                            );
+
+
+                        if(!yes)
+                            return;
+
+
+                        events =
+                            events.filter(
+                                item =>
+                                    item.id !==
+                                    event.id
+                            );
+
+
+                        saveEvents();
+
+                        renderCalendar();
+
+                    };
+
+
+                    cell.appendChild(
+                        element
+                    );
+
+                }
+            );
+
+
+        grid.appendChild(
+            cell
+        );
+
+    }
+
+}
+
+
+/* ==================================================
+   MODAL OUTSIDE CLICK
+================================================== */
+
+document
+    .getElementById(
+        "eventModal"
+    )
+    .addEventListener(
+        "pointerdown",
+        e => {
+
+            if(
+                e.target.id ===
+                "eventModal"
+            ){
+
+                closeEventModal();
+
+            }
+
+        }
+    );
+
+
+/* ==================================================
+   ESC
+================================================== */
+
+document.addEventListener(
+    "keydown",
+    e => {
+
+        if(
+            e.key === "Escape"
+        ){
+
+            closeEventModal();
+
+        }
+
+    }
+);
+
+
+/* ==================================================
+   START
+================================================== */
+
+renderCalendar();
+
+</script>
+
+</body>
+</html>
