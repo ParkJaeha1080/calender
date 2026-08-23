@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -980,7 +980,7 @@ select:focus {
 
         <div class="form-row" id="nameRow" style="display:none">
             <div class="form-label">이름</div>
-            <input id="authName" placeholder="예: 재하">
+            <input id="authName" placeholder="예: 홍길동">
         </div>
 
         <div class="form-row">
@@ -1187,7 +1187,7 @@ async function signup() {
     }
 
     if (!data.session) {
-        showAuthError("회원가입 완료!\n이메일 인증이 필요한 경우 이메일을 확인하세요.");
+        showAuthError("회원가입 완료!");
         return;
     }
 
