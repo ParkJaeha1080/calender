@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -361,7 +361,7 @@ body {
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(0,1fr));
-    grid-auto-rows: minmax(78px,1fr);
+    grid-auto-rows: minmax(78px, 1fr);
     gap: 5px;
 }
 
@@ -401,13 +401,13 @@ body {
 }
 
 .event-item {
-    font-size: 10px;
+    font-size: 11px;
     background: rgba(43,132,255,.72);
     border-radius: 4px;
     padding: 3px 5px;
-    white-space: nowrap;
+    word-break: break-all;
+    line-height: 1.25;
     overflow: hidden;
-    text-overflow: ellipsis;
     cursor: pointer;
     touch-action: auto;
     transition: filter 0.15s ease;
@@ -415,6 +415,13 @@ body {
 
 .event-item:hover {
     filter: brightness(1.2);
+}
+
+.event-time-badge {
+    font-size: 9px;
+    opacity: 0.9;
+    margin-right: 3px;
+    font-weight: 500;
 }
 
 /* Color Picker */
@@ -729,12 +736,12 @@ select:focus {
     }
 
     .calendar-grid {
-        grid-auto-rows: 70px;
+        grid-auto-rows: minmax(72px, auto);
         gap: 3px;
     }
 
     .window-content {
-        padding: 10px;
+        padding: 8px;
     }
 
     .calendar-title {
@@ -745,8 +752,20 @@ select:focus {
         flex-wrap: wrap;
     }
 
+    .day {
+        padding: 4px;
+    }
+
     .event-item {
+        font-size: 9px;
+        padding: 2px 3px;
+        line-height: 1.2;
+    }
+
+    .event-time-badge {
         font-size: 8px;
+        display: inline;
+        margin-right: 2px;
     }
 
     .taskbar-center {
@@ -837,7 +856,7 @@ select:focus {
         <div class="ai-layout">
             <div class="ai-messages" id="aiMessages"></div>
             <div class="ai-input">
-                <input id="aiInput" placeholder="예: 매주 화요일 오후 3시에 회의 일정 추가해줘 (1달 동안)">
+                <input id="aiInput" placeholder="예: 매주 화요일 오후 3시에 회의 일정 추가해줘">
                 <button class="btn primary" id="aiSend">보내기</button>
             </div>
         </div>
@@ -867,7 +886,7 @@ select:focus {
 
         <div class="form-row">
             <div class="form-label">일정 이름</div>
-            <input id="eventTitle" placeholder="예: 매주 피아노 레슨">
+            <input id="eventTitle" placeholder="예: 피아노 레슨">
         </div>
 
         <div class="form-row">
@@ -1187,7 +1206,7 @@ async function signup() {
     }
 
     if (!data.session) {
-        showAuthError("회원가입 완료!");
+        showAuthError("회원가입 완료!\n이메일 인증이 필요한 경우 이메일을 확인하세요.");
         return;
     }
 
@@ -1342,8 +1361,8 @@ function renderCalendar() {
                         const bgColor = ev.color || "#2563eb";
                         return `
                             <div class="event-item" style="background-color: ${bgColor};" data-event-id="${ev.id}">
-                                ${ev.event_time ? escapeHTML(ev.event_time) + " " : ""}
-                                ${escapeHTML(ev.title)}
+                                ${ev.event_time ? `<span class="event-time-badge">${escapeHTML(ev.event_time)}</span>` : ""}
+                                <span>${escapeHTML(ev.title)}</span>
                             </div>
                         `;
                     }).join("")}
@@ -1412,7 +1431,6 @@ function openEvent(id) {
     $("eventModalTitle").textContent = "일정 수정";
     $("eventDelete").style.display = "block";
 
-    // 수정 모드에서는 단일 인스턴스 수정으로 유지
     $("recurrenceGroup").style.display = "none";
     $("recurrenceUntilRow").style.display = "none";
 
@@ -1469,7 +1487,6 @@ async function saveEvent() {
     const sharedWith = getSelectedMembers();
 
     if (id) {
-        // 단일 일정 수정
         const payload = {
             title,
             event_date: eventDate,
@@ -1491,7 +1508,6 @@ async function saveEvent() {
             return;
         }
     } else {
-        // 새 일정 등록
         if (recurrence === "weekly" && recurrenceUntil) {
             const start = new Date(eventDate + "T00:00:00");
             const end = new Date(recurrenceUntil + "T23:59:59");
