@@ -2459,6 +2459,19 @@ function setupWindowResizing() {
    DESKTOP ICONS
 ========================================================= */
 
+function openDesktopApp(app) {
+    if (app === "calendar") openWindow("calendarWindow");
+    else if (app === "ai") openWindow("aiWindow");
+    else if (app === "family") {
+        renderFamily();
+        showModal("familyModal");
+    } else if (app === "settings") openSettings();
+    else if (app === "patchnotes") {
+        openWindow("patchnotesWindow");
+        loadPatchNotes();
+    }
+}
+
 function setupDesktopIcons() {
     document.querySelectorAll(".desktop-icon").forEach(icon => {
         let dragging = false, startX = 0, startY = 0, originalX = 0, originalY = 0;
@@ -2475,29 +2488,24 @@ function setupDesktopIcons() {
 
         icon.addEventListener("pointermove", e => {
             if (!dragging) return;
-            icon.style.left = Math.max(0, originalX + (e.clientX - startX)) + "px";
-            icon.style.top = Math.max(0, originalY + (e.clientY - startY)) + "px";
+            if (Math.abs(e.clientX - startX) > 6 || Math.abs(e.clientY - startY) > 6) {
+                icon.style.left = Math.max(0, originalX + (e.clientX - startX)) + "px";
+                icon.style.top = Math.max(0, originalY + (e.clientY - startY)) + "px";
+            }
         });
 
         const stopIconDrag = e => {
             if (!dragging) return;
+            const moved = Math.abs(e.clientX - startX) > 6 || Math.abs(e.clientY - startY) > 6;
             dragging = false;
-            saveIconPositions();
+            if (moved) saveIconPositions();
+            if (!moved && e.pointerType === "touch") openDesktopApp(icon.dataset.app);
             try { if (icon.hasPointerCapture(e.pointerId)) icon.releasePointerCapture(e.pointerId); } catch {}
         };
 
         icon.addEventListener("pointerup", stopIconDrag);
         icon.addEventListener("pointercancel", stopIconDrag);
-
-        icon.addEventListener("dblclick", () => {
-            const app = icon.dataset.app;
-            if (app === "calendar") openWindow("calendarWindow");
-            if (app === "ai") openWindow("aiWindow");
-            if (app === "family") {
-                renderFamily();
-                showModal("familyModal");
-            }
-        });
+        icon.addEventListener("dblclick", () => openDesktopApp(icon.dataset.app));
     });
 
     loadIconPositions();
@@ -2645,8 +2653,20 @@ $("familyClose").addEventListener("click", () => hideModal("familyModal"));
 $("saveMyName").addEventListener("click", saveMyName);
 $("setupSave").addEventListener("click", saveSetup);
 $("settingsClose").addEventListener("click",()=>hideModal("setupModal"));
-$("darkThemeButton").addEventListener("click",()=>{document.documentElement.dataset.theme="dark";$("darkThemeButton").textContent="● 블랙";$("lightThemeButton").textContent="○ 화이트"});
-$("lightThemeButton").addEventListener("click",()=>{document.documentElement.dataset.theme="light";$("darkThemeButton").textContent="○ 블랙";$("lightThemeButton").textContent="● 화이트"});
+$("darkThemeButton").addEventListener("click",()=>{
+    document.documentElement.dataset.theme="dark";
+    $("darkThemeButton").textContent="● 블랙";
+    $("lightThemeButton").textContent="○ 화이트";
+    saveAppearance();
+});
+$("lightThemeButton").addEventListener("click",()=>{
+    document.documentElement.dataset.theme="light";
+    $("darkThemeButton").textContent="○ 블랙";
+    $("lightThemeButton").textContent="● 화이트";
+    saveAppearance();
+});
+$("wallpaperColor").addEventListener("input",saveAppearance);
+$("taskbarColor").addEventListener("input",saveAppearance);
 $("logoutFromSettings").addEventListener("click",async()=>{await supabaseClient.auth.signOut();location.reload()});
 $("settingsTask").addEventListener("click",openSettings);
 $("patchnotesTask").addEventListener("click",()=>{openWindow("patchnotesWindow");loadPatchNotes()});
