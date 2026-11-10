@@ -1484,6 +1484,90 @@ async function initSupabase() {
    AUTH
 ========================================================= */
 
+function showAuthError(message = "") {
+    const el = $("authError");
+    if (el) el.textContent = message;
+}
+
+function switchAuthMode() {
+    authMode = authMode === "login" ? "signup" : "login";
+    const isSignup = authMode === "signup";
+    $("authSubtitle").textContent = isSignup ? "새 계정을 만들어 가족 캘린더를 시작하세요" : "가족 캘린더에 로그인하세요";
+    $("nameRow").style.display = isSignup ? "block" : "none";
+    $("authButton").textContent = isSignup ? "회원가입" : "로그인";
+    $("authSwitchText").textContent = isSignup ? "이미 계정이 있나요?" : "계정이 없나요?";
+    $("authSwitch").textContent = isSignup ? "로그인" : "회원가입";
+    showAuthError("");
+}
+
+async function login() {
+    if (!supabaseClient) return showAuthError("Supabase 연결이 초기화되지 않았습니다.");
+    const email = $("authEmail").value.trim();
+    const password = $("authPassword").value;
+    if (!email || !password) return showAuthError("이메일과 비밀번호를 입력하세요.");
+    $("authButton").disabled = true;
+    showAuthError("로그인 중...");
+    try {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        showAuthError("");
+        await checkAuth();
+        if (currentUser) {
+            $("authScreen").classList.remove("visible");
+            openWindow("calendarWindow");
+        }
+    } catch (error) {
+        console.error("로그인 실패:", error);
+        showAuthError(error.message || "로그인에 실패했습니다.");
+    } finally {
+        $("authButton").disabled = false;
+    }
+}
+
+async function signup() {
+    if (!supabaseClient) return showAuthError("Supabase 연결이 초기화되지 않았습니다.");
+    const name = $("authName").value.trim();
+    const email = $("authEmail").value.trim();
+    const password = $("authPassword").value;
+    if (!name || !email || !password) return showAuthError("이름, 이메일, 비밀번호를 모두 입력하세요.");
+    if (password.length < 6) return showAuthError("비밀번호는 6자 이상이어야 합니다.");
+    $("authButton").disabled = true;
+    showAuthError("회원가입 중...");
+    try {
+        const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: { data: { display_name: name } }
+        });
+        if (error) throw error;
+        if (data.session) {
+            currentUser = data.user;
+            const { error: memberError } = await supabaseClient
+                .from("family_members")
+                .upsert({ id: data.user.id, display_name: name }, { onConflict: "id" });
+            if (memberError) console.warn("가족 구성원 등록 안내:", memberError);
+            await checkAuth();
+            if (currentUser) {
+                $("authScreen").classList.remove("visible");
+                openWindow("calendarWindow");
+            }
+        } else {
+            showAuthError("가입 확인 이메일을 보냈습니다. 이메일 인증 후 로그인해 주세요.");
+            authMode = "login";
+            $("authSubtitle").textContent = "이메일 인증 후 로그인하세요";
+            $("nameRow").style.display = "none";
+            $("authButton").textContent = "로그인";
+            $("authSwitchText").textContent = "계정이 없나요?";
+            $("authSwitch").textContent = "회원가입";
+        }
+    } catch (error) {
+        console.error("회원가입 실패:", error);
+        showAuthError(error.message || "회원가입에 실패했습니다.");
+    } finally {
+        $("authButton").disabled = false;
+    }
+}
+
 async function checkAuth() {
     if (!supabaseClient) {
         setStatus("● Supabase 초기화 안 됨");
