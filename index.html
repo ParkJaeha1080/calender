@@ -930,6 +930,22 @@ select:focus {
 
 
 /* =========================================================
+   SETTINGS & PATCH NOTES
+========================================================= */
+.settings-box{width:min(560px,100%)}
+.settings-section{padding:14px 0;border-top:1px solid var(--border,rgba(255,255,255,.12))}
+.settings-section:first-of-type{border-top:0}
+.settings-section-title{font-size:13px;font-weight:650;margin-bottom:12px}
+.settings-choice-row{display:flex;gap:8px}.settings-choice-row .btn{flex:1}
+.settings-help{margin-top:6px;color:var(--muted,#9ca3af);font-size:11px}
+.settings-account-actions{justify-content:flex-start}
+.color-input{width:100%;height:42px;padding:4px;cursor:pointer}
+.patchnotes-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}.patchnotes-header>div{flex:1}
+.patchnotes-title{font-size:22px;font-weight:650}.patchnotes-subtitle{margin-top:5px;color:var(--muted,#9ca3af);font-size:12px}
+.patchnotes-list{display:flex;flex-direction:column;gap:10px}
+.patchnote-item{padding:14px;background:var(--surface-2,#20242b);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:10px}
+.patchnote-message{font-size:13px;font-weight:600;line-height:1.45}.patchnote-meta{margin-top:7px;color:var(--muted,#9ca3af);font-size:10px}.patchnote-sha{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.8}
+/* =========================================================
    THEME OVERRIDE — clean, neutral calendar UI
 ========================================================= */
 :root {
@@ -945,7 +961,11 @@ select:focus {
 }
 
 body {
-    background: var(--bg) !important;
+    background-color: var(--wallpaper-color, var(--bg)) !important;
+    background-image: var(--wallpaper-image, none) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
     color: var(--text) !important;
 }
 
@@ -954,7 +974,7 @@ body {
 }
 
 #taskbar {
-    background: var(--surface) !important;
+    background: var(--taskbar-custom, var(--surface)) !important;
     backdrop-filter: none !important;
     border-top: 1px solid var(--border) !important;
 }
@@ -1095,28 +1115,6 @@ html[data-theme="light"] .auth-switch button {
     color: #2563eb;
 }
 
-.theme-toggle {
-    width: 40px;
-    height: 32px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text);
-    cursor: pointer;
-    font-size: 15px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.theme-toggle:hover {
-    background: var(--hover);
-}
-
-.theme-toggle .sun { display: none; }
-html[data-theme="light"] .theme-toggle .sun { display: inline; }
-html[data-theme="light"] .theme-toggle .moon { display: none; }
-
 </style>
 </head>
 
@@ -1136,6 +1134,8 @@ html[data-theme="light"] .theme-toggle .moon { display: none; }
         <div class="icon-image">👨‍👩‍👧</div>
         <div class="icon-label">가족</div>
     </div>
+    <div class="desktop-icon" data-app="settings" style="left:20px;top:320px"><div class="icon-image">⚙️</div><div class="icon-label">설정</div></div>
+    <div class="desktop-icon" data-app="patchnotes" style="left:20px;top:420px"><div class="icon-image">📋</div><div class="icon-label">패치노트</div></div>
 </div>
 
 <!-- CALENDAR WINDOW -->
@@ -1214,14 +1214,11 @@ html[data-theme="light"] .theme-toggle .moon { display: none; }
         <button class="task-button" id="calendarTask">📅</button>
         <button class="task-button" id="aiTask">🤖</button>
         <button class="task-button" id="familyTask">👨‍👩‍👧</button>
+        <button class="task-button" id="settingsTask" title="설정">⚙️</button>
+        <button class="task-button" id="patchnotesTask" title="패치노트">📋</button>
     </div>
     <div class="taskbar-right">
-<button class="theme-toggle" id="themeToggle" title="테마 전환" aria-label="테마 전환">
-    <span class="moon">☾</span>
-    <span class="sun">☀</span>
-</button>
-
-        <div class="connection" id="connectionStatus">● 연결 중</div>
+<div class="connection" id="connectionStatus">● 연결 중</div>
         <div class="clock" id="clock"></div>
     </div>
 </div>
@@ -1323,25 +1320,28 @@ html[data-theme="light"] .theme-toggle .moon { display: none; }
 
 <!-- SETTINGS MODAL -->
 <div class="modal" id="setupModal">
-    <div class="modal-box">
-        <div class="modal-title">⚙️ Supabase 설정</div>
-        <div class="form-row">
-            <div class="form-label">Supabase URL</div>
-            <input id="supabaseUrl" placeholder="https://xxxxxxxx.supabase.co">
-        </div>
-        <div class="form-row">
-            <div class="form-label">Publishable / Anon Key</div>
-            <input id="supabaseKey" placeholder="sb_publishable_... 또는 anon key">
-        </div>
-        <div class="form-row">
-            <div class="form-label">Gemini API Key</div>
-            <input id="geminiKey" type="password" placeholder="Gemini API Key">
-        </div>
-        <div class="modal-actions">
-            <button class="btn primary" id="setupSave">저장 및 연결</button>
-        </div>
-    </div>
-</div>
+<div class="modal-box settings-box">
+<div class="modal-title">⚙️ 설정</div>
+<div class="settings-section"><div class="settings-section-title">연결 설정</div>
+<div class="form-row"><div class="form-label">Supabase URL</div><input id="supabaseUrl" placeholder="https://xxxxxxxx.supabase.co"></div>
+<div class="form-row"><div class="form-label">Publishable / Anon Key</div><input id="supabaseKey" type="password" placeholder="sb_publishable_... 또는 anon key"></div>
+<div class="form-row"><div class="form-label">Gemini API Key</div><input id="geminiKey" type="password" placeholder="Gemini API Key"></div></div>
+<div class="settings-section"><div class="settings-section-title">화면</div>
+<div class="form-row"><div class="form-label">테마</div><div class="settings-choice-row"><button class="btn" id="darkThemeButton">● 블랙</button><button class="btn" id="lightThemeButton">○ 화이트</button></div></div>
+<div class="form-row"><div class="form-label">배경화면 색상</div><input id="wallpaperColor" type="color" value="#0f1115" class="color-input"></div>
+<div class="form-row"><div class="form-label">배경화면 사진</div><input id="wallpaperImage" type="file" accept="image/*"><div class="settings-help">선택한 사진은 이 브라우저에 저장됩니다.</div></div>
+<div class="form-row"><div class="form-label">작업표시줄 색상</div><input id="taskbarColor" type="color" value="#181b21" class="color-input"></div></div>
+<div class="settings-section"><div class="settings-section-title">계정</div><div class="modal-actions settings-account-actions"><button class="btn" id="logoutFromSettings">로그아웃</button></div></div>
+<div class="modal-actions"><button class="btn" id="settingsClose">닫기</button><button class="btn primary" id="setupSave">저장 및 적용</button></div>
+</div></div>
+
+<!-- PATCH NOTES WINDOW -->
+<div class="window" id="patchnotesWindow">
+<div class="titlebar"><div class="title">📋 패치노트</div><div class="window-controls">
+<button class="window-control" data-minimize="patchnotesWindow">─</button><button class="window-control" data-maximize="patchnotesWindow">□</button><button class="window-control close" data-close="patchnotesWindow">×</button>
+</div></div>
+<div class="window-content"><div class="patchnotes-header"><div><div class="patchnotes-title">업데이트 기록</div><div class="patchnotes-subtitle">GitHub 커밋 기준 최신 변경사항</div></div><button class="btn" id="refreshPatchnotes">새로고침</button></div>
+<div id="patchnotesList" class="patchnotes-list"><div class="settings-help">패치노트를 불러오는 중...</div></div></div></div>
 
 <!-- AUTH -->
 <div id="authScreen">
@@ -1388,7 +1388,11 @@ const STORAGE = {
     supabaseKey: "windows11_supabase_key",
     geminiKey: "windows11_gemini_key",
     iconPositions: "windows11_family_calendar_icons",
-    calendarMonth: "windows11_calendar_month"
+    calendarMonth: "windows11_calendar_month",
+    theme: "windows11_calendar_theme",
+    wallpaperColor: "windows11_wallpaper_color",
+    wallpaperImage: "windows11_wallpaper_image",
+    taskbarColor: "windows11_taskbar_color"
 };
 
 let supabaseClient = null;
@@ -2458,6 +2462,56 @@ function loadIconPositions() {
 }
 
 /* =========================================================
+/* =========================================================
+   PERSONALIZATION
+========================================================= */
+function applySavedAppearance() {
+    const theme=localStorage.getItem(STORAGE.theme)||"dark";
+    document.documentElement.dataset.theme=theme==="light"?"light":"dark";
+    const color=localStorage.getItem(STORAGE.wallpaperColor)||(theme==="light"?"#f5f6f8":"#0f1115");
+    const taskbar=localStorage.getItem(STORAGE.taskbarColor)||(theme==="light"?"#ffffff":"#181b21");
+    const image=localStorage.getItem(STORAGE.wallpaperImage)||"";
+    document.documentElement.style.setProperty("--wallpaper-color",color);
+    document.documentElement.style.setProperty("--wallpaper-image",image?'url("'+image+'")':"none");
+    document.documentElement.style.setProperty("--taskbar-custom",taskbar);
+    if($("wallpaperColor")) $("wallpaperColor").value=color;
+    if($("taskbarColor")) $("taskbarColor").value=taskbar;
+}
+function openSettings(){
+    loadSetupValues();
+    const t=localStorage.getItem(STORAGE.theme)||"dark";
+    $("darkThemeButton").textContent=t==="dark"?"● 블랙":"○ 블랙";
+    $("lightThemeButton").textContent=t==="light"?"● 화이트":"○ 화이트";
+    showModal("setupModal");
+}
+function saveAppearance(){
+    localStorage.setItem(STORAGE.theme,document.documentElement.dataset.theme||"dark");
+    localStorage.setItem(STORAGE.wallpaperColor,$("wallpaperColor").value);
+    localStorage.setItem(STORAGE.taskbarColor,$("taskbarColor").value);
+    applySavedAppearance();
+}
+function setupWallpaperPicker(){
+    $("wallpaperImage").addEventListener("change",e=>{
+        const file=e.target.files?.[0]; if(!file||!file.type.startsWith("image/")) return;
+        const reader=new FileReader();
+        reader.onload=()=>{try{localStorage.setItem(STORAGE.wallpaperImage,reader.result);applySavedAppearance()}catch{alert("사진이 너무 큽니다. 더 작은 이미지를 사용해 주세요.")}};
+        reader.readAsDataURL(file);
+    });
+}
+async function loadPatchNotes(){
+    const list=$("patchnotesList"); list.innerHTML='<div class="settings-help">GitHub 커밋을 불러오는 중...</div>';
+    try{
+        const r=await fetch("https://api.github.com/repos/ParkJaeha1080/calender/commits?per_page=20",{headers:{"Accept":"application/vnd.github+json"}});
+        if(!r.ok) throw new Error("GitHub API "+r.status);
+        const commits=await r.json();
+        list.innerHTML=commits.length?commits.map(x=>{
+            const m=escapeHTML((x.commit?.message||"").split("\n")[0]);
+            const d=x.commit?.author?.date?new Date(x.commit.author.date).toLocaleString("ko-KR"):"";
+            const sha=escapeHTML((x.sha||"").slice(0,7));
+            return '<div class="patchnote-item"><div class="patchnote-message">'+m+'</div><div class="patchnote-meta">'+d+' · <span class="patchnote-sha">'+sha+'</span></div></div>';
+        }).join(""):'<div class="settings-help">커밋 기록이 없습니다.</div>';
+    }catch(err){list.innerHTML='<div class="settings-help">패치노트를 불러오지 못했습니다.<br>'+escapeHTML(err.message)+'</div>'}
+}
    CLOCK & SETUP
 ========================================================= */
 
@@ -2487,6 +2541,8 @@ async function saveSetup() {
     localStorage.setItem(STORAGE.supabaseUrl, url);
     localStorage.setItem(STORAGE.supabaseKey, key);
     if (gemini) localStorage.setItem(STORAGE.geminiKey, gemini);
+    else localStorage.removeItem(STORAGE.geminiKey);
+    saveAppearance();
 
     hideModal("setupModal");
     location.reload();
@@ -2495,9 +2551,6 @@ async function saveSetup() {
 /* =========================================================
    LISTENERS
 ========================================================= */
-
-$("themeToggle").addEventListener("click", toggleTheme);
-
 $("prevMonth").addEventListener("click", () => {
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
     renderCalendar();
@@ -2528,6 +2581,14 @@ $("eventDelete").addEventListener("click", deleteEvent);
 $("familyClose").addEventListener("click", () => hideModal("familyModal"));
 $("saveMyName").addEventListener("click", saveMyName);
 $("setupSave").addEventListener("click", saveSetup);
+$("settingsClose").addEventListener("click",()=>hideModal("setupModal"));
+$("darkThemeButton").addEventListener("click",()=>{document.documentElement.dataset.theme="dark";$("darkThemeButton").textContent="● 블랙";$("lightThemeButton").textContent="○ 화이트"});
+$("lightThemeButton").addEventListener("click",()=>{document.documentElement.dataset.theme="light";$("darkThemeButton").textContent="○ 블랙";$("lightThemeButton").textContent="● 화이트"});
+$("logoutFromSettings").addEventListener("click",async()=>{await supabaseClient.auth.signOut();location.reload()});
+$("settingsTask").addEventListener("click",openSettings);
+$("patchnotesTask").addEventListener("click",()=>{openWindow("patchnotesWindow");loadPatchNotes()});
+$("refreshPatchnotes").addEventListener("click",loadPatchNotes);
+setupWallpaperPicker();
 
 $("authButton").addEventListener("click", () => {
     if (authMode === "login") login();
