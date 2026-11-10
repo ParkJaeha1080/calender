@@ -1330,8 +1330,9 @@ html[data-theme="light"] .auth-switch button {
 <div class="form-row"><div class="form-label">Gemini API Key</div><input id="geminiKey" type="password" placeholder="Gemini API Key"></div></div>
 <div class="settings-section"><div class="settings-section-title">화면</div>
 <div class="form-row"><div class="form-label">테마</div><div class="settings-choice-row"><button class="btn" id="darkThemeButton">● 블랙</button><button class="btn" id="lightThemeButton">○ 화이트</button></div></div>
-<div class="form-row"><div class="form-label">배경화면 색상</div><input id="wallpaperColor" type="color" value="#0f1115" class="color-input"></div>
-<div class="form-row"><div class="form-label">배경화면 사진</div><input id="wallpaperImage" type="file" accept="image/*"><div class="settings-help">선택한 사진은 이 브라우저에 저장됩니다.</div></div>
+<div class="form-row"><div class="form-label">배경화면 방식</div><div class="settings-choice-row"><button class="btn" id="wallpaperColorMode">단색</button><button class="btn" id="wallpaperImageMode">이미지</button></div></div>
+<div class="form-row" id="wallpaperColorRow"><div class="form-label">배경화면 색상</div><input id="wallpaperColor" type="color" value="#0f1115" class="color-input"></div>
+<div class="form-row" id="wallpaperImageRow"><div class="form-label">배경화면 사진</div><input id="wallpaperImage" type="file" accept="image/*"><div class="settings-help">선택한 사진은 이 브라우저에 저장됩니다.</div></div>
 <div class="form-row"><div class="form-label">작업표시줄 색상</div><input id="taskbarColor" type="color" value="#181b21" class="color-input"></div></div>
 <div class="settings-section"><div class="settings-section-title">계정</div><div class="modal-actions settings-account-actions"><button class="btn" id="logoutFromSettings">로그아웃</button></div></div>
 <div class="modal-actions"><button class="btn" id="settingsClose">닫기</button><button class="btn primary" id="setupSave">저장 및 적용</button></div>
@@ -1396,6 +1397,7 @@ const STORAGE = {
     theme: "windows11_calendar_theme",
     wallpaperColor: "windows11_wallpaper_color",
     wallpaperImage: "windows11_wallpaper_image",
+    wallpaperMode: "windows11_wallpaper_mode",
     taskbarColor: "windows11_taskbar_color"
 };
 
@@ -2550,13 +2552,27 @@ function loadIconPositions() {
 /* =========================================================
    PERSONALIZATION
 ========================================================= */
+let draftWallpaperMode = "color";
+
+function syncWallpaperModeButtons() {
+    const isImage = draftWallpaperMode === "image";
+    $("wallpaperColorMode").textContent = isImage ? "○ 단색" : "● 단색";
+    $("wallpaperImageMode").textContent = isImage ? "● 이미지" : "○ 이미지";
+    $("wallpaperColorRow").style.display = isImage ? "none" : "block";
+    $("wallpaperImageRow").style.display = isImage ? "block" : "none";
+}
+function setWallpaperMode(mode) {
+    draftWallpaperMode = mode === "image" ? "image" : "color";
+    syncWallpaperModeButtons();
+    applyAppearancePreview();
+}
 function applyAppearancePreview() {
     const theme=document.documentElement.dataset.theme==="light"?"light":"dark";
     const color=$("wallpaperColor")?.value||(theme==="light"?"#f5f6f8":"#0f1115");
     const taskbar=$("taskbarColor")?.value||(theme==="light"?"#ffffff":"#181b21");
     const image=localStorage.getItem(STORAGE.wallpaperImage)||"";
     document.documentElement.style.setProperty("--wallpaper-color",color);
-    document.documentElement.style.setProperty("--wallpaper-image",image?'url("'+image+'")':"none");
+    document.documentElement.style.setProperty("--wallpaper-image",draftWallpaperMode==="image"&&image?'url("'+image+'")':"none");
     document.documentElement.style.setProperty("--taskbar-custom",taskbar);
 }
 function applySavedAppearance() {
@@ -2565,11 +2581,13 @@ function applySavedAppearance() {
     const color=localStorage.getItem(STORAGE.wallpaperColor)||(theme==="light"?"#f5f6f8":"#0f1115");
     const taskbar=localStorage.getItem(STORAGE.taskbarColor)||(theme==="light"?"#ffffff":"#181b21");
     const image=localStorage.getItem(STORAGE.wallpaperImage)||"";
+    draftWallpaperMode=localStorage.getItem(STORAGE.wallpaperMode)||"color";
     document.documentElement.style.setProperty("--wallpaper-color",color);
-    document.documentElement.style.setProperty("--wallpaper-image",image?'url("'+image+'")':"none");
+    document.documentElement.style.setProperty("--wallpaper-image",draftWallpaperMode==="image"&&image?'url("'+image+'")':"none");
     document.documentElement.style.setProperty("--taskbar-custom",taskbar);
     if($("wallpaperColor")) $("wallpaperColor").value=color;
     if($("taskbarColor")) $("taskbarColor").value=taskbar;
+    if($("wallpaperColorMode")) syncWallpaperModeButtons();
 }
 function syncThemeButtons() {
     const t=document.documentElement.dataset.theme||"dark";
@@ -2585,6 +2603,7 @@ function openSettings(){
 function saveAppearance(){
     localStorage.setItem(STORAGE.theme,document.documentElement.dataset.theme==="light"?"light":"dark");
     localStorage.setItem(STORAGE.wallpaperColor,$("wallpaperColor").value);
+    localStorage.setItem(STORAGE.wallpaperMode,draftWallpaperMode);
     localStorage.setItem(STORAGE.taskbarColor,$("taskbarColor").value);
     applySavedAppearance();
 }
@@ -2697,6 +2716,8 @@ $("lightThemeButton").addEventListener("click",()=>{
     syncThemeButtons();
     applyAppearancePreview();
 });
+$("wallpaperColorMode").addEventListener("click",()=>setWallpaperMode("color"));
+$("wallpaperImageMode").addEventListener("click",()=>setWallpaperMode("image"));
 $("wallpaperColor").addEventListener("input",applyAppearancePreview);
 $("taskbarColor").addEventListener("input",applyAppearancePreview);
 $("logoutFromSettings").addEventListener("click",async()=>{await supabaseClient.auth.signOut();location.reload()});
