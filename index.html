@@ -928,6 +928,195 @@ select:focus {
     }
 }
 
+
+/* =========================================================
+   THEME OVERRIDE — clean, neutral calendar UI
+========================================================= */
+:root {
+    --bg: #0f1115;
+    --surface: #181b21;
+    --surface-2: #20242b;
+    --surface-3: #282d35;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --border: rgba(255,255,255,.12);
+    --hover: rgba(255,255,255,.07);
+    --accent: #2563eb;
+}
+
+body {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+}
+
+#desktop {
+    background: transparent;
+}
+
+#taskbar {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    border-top: 1px solid var(--border) !important;
+}
+
+.window {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 18px 50px rgba(0,0,0,.28) !important;
+}
+
+.titlebar {
+    background: var(--surface-2) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.calendar-sidebar,
+.day,
+.agenda-item,
+.share-member,
+.member-row {
+    background: var(--surface-2) !important;
+    border-color: var(--border) !important;
+}
+
+.day:hover,
+.agenda-item:hover {
+    background: var(--surface-3) !important;
+}
+
+.btn {
+    background: var(--surface-3) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+.btn:hover,
+.task-button:hover,
+.window-control:hover {
+    background: var(--hover) !important;
+}
+
+.btn.primary {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #fff !important;
+}
+
+input,
+textarea,
+select {
+    background: var(--surface-2) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+select option {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.modal {
+    background: rgba(0,0,0,.48) !important;
+    backdrop-filter: none !important;
+}
+
+.modal-box,
+.auth-box {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    border-color: var(--border) !important;
+}
+
+.message.ai {
+    background: var(--surface-2) !important;
+}
+
+.message.user {
+    background: var(--accent) !important;
+}
+
+.icon-label {
+    text-shadow: none !important;
+}
+
+.connection,
+.form-label,
+.weekday,
+.auth-subtitle,
+.member-email {
+    color: var(--muted);
+}
+
+/* Light theme */
+html[data-theme="light"] {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f0f1f3;
+    --surface-3: #e6e8ec;
+    --text: #17191d;
+    --muted: #6b7280;
+    --border: rgba(17,24,39,.12);
+    --hover: rgba(17,24,39,.07);
+    --accent: #2563eb;
+}
+
+html[data-theme="light"] body {
+    color: var(--text) !important;
+}
+
+html[data-theme="light"] .desktop-icon:hover {
+    background: rgba(17,24,39,.07);
+}
+
+html[data-theme="light"] .desktop-icon.selected {
+    background: rgba(17,24,39,.10);
+}
+
+html[data-theme="light"] .window-control,
+html[data-theme="light"] .task-button {
+    color: var(--text);
+}
+
+html[data-theme="light"] .event-time-badge {
+    background: rgba(0,0,0,.08);
+    color: #fff;
+}
+
+html[data-theme="light"] .event-bar {
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+
+html[data-theme="light"] #authScreen {
+    background: var(--bg);
+}
+
+html[data-theme="light"] .auth-switch button {
+    color: #2563eb;
+}
+
+.theme-toggle {
+    width: 40px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background: var(--hover);
+}
+
+.theme-toggle .sun { display: none; }
+html[data-theme="light"] .theme-toggle .sun { display: inline; }
+html[data-theme="light"] .theme-toggle .moon { display: none; }
+
 </style>
 </head>
 
@@ -1027,6 +1216,11 @@ select:focus {
         <button class="task-button" id="familyTask">👨‍👩‍👧</button>
     </div>
     <div class="taskbar-right">
+<button class="theme-toggle" id="themeToggle" title="테마 전환" aria-label="테마 전환">
+    <span class="moon">☾</span>
+    <span class="sun">☀</span>
+</button>
+
         <div class="connection" id="connectionStatus">● 연결 중</div>
         <div class="clock" id="clock"></div>
     </div>
@@ -2301,6 +2495,8 @@ async function saveSetup() {
 /* =========================================================
    LISTENERS
 ========================================================= */
+
+$("themeToggle").addEventListener("click", toggleTheme);
 
 $("prevMonth").addEventListener("click", () => {
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
