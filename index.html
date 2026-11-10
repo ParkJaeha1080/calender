@@ -2592,17 +2592,18 @@ async function boot() {
     updateClock();
     setInterval(updateClock, 1000);
 
+    // 캘린더 창은 항상 먼저 열어 UI가 빈 화면으로 남지 않게 함
+    openWindow("calendarWindow");
+
     try {
-        // 최초 방문 브라우저는 연결 설정부터 표시하고 데스크톱을 열지 않음
+        // 최초 방문 브라우저는 설정창을 캘린더 위에 표시
         const connected = await initSupabase();
         if (!connected) {
-            closeWindow("calendarWindow");
             showModal("setupModal");
             return;
         }
 
-        // 연결 설정이 저장된 경우에만 데스크톱을 표시하고 로그인 상태 확인
-        openWindow("calendarWindow");
+        // 설정이 저장된 경우에만 기존 세션을 확인
         await checkAuth();
     } catch (error) {
         console.error("앱 초기화 오류:", error);
