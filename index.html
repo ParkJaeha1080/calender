@@ -1499,7 +1499,7 @@ async function checkAuth() {
         console.error("Supabase 세션 확인 실패:", error);
         setStatus("● 인증 서버 응답 없음");
         $("authScreen").classList.add("visible");
-        showAuthError("Supabase 인증 서버에 응답이 없습니다. URL과 API Key, 네트워크를 확인하세요.");
+        alert("Supabase 인증 서버에 응답이 없습니다. URL과 API Key, 네트워크를 확인하세요.");
         return;
     }
 
@@ -1508,7 +1508,7 @@ async function checkAuth() {
         console.error(error);
         setStatus("● 인증 오류");
         $("authScreen").classList.add("visible");
-        showAuthError("인증 오류: " + error.message);
+        alert("인증 오류: " + error.message);
         return;
     }
 
@@ -2592,11 +2592,18 @@ async function boot() {
     updateClock();
     setInterval(updateClock, 1000);
 
-    const connected = await initSupabase();
-    if (!connected) return;
-
-    await checkAuth();
+    // DB 연결 여부와 관계없이 데스크톱 창 UI부터 표시
     openWindow("calendarWindow");
+
+    try {
+        const connected = await initSupabase();
+        if (!connected) return;
+        await checkAuth();
+    } catch (error) {
+        console.error("앱 초기화 오류:", error);
+        setStatus("● 초기화 오류");
+        alert("캘린더 초기화 중 오류가 발생했습니다.\n\n" + (error?.message || error));
+    }
 }
 
 boot();
