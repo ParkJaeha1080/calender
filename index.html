@@ -2592,12 +2592,17 @@ async function boot() {
     updateClock();
     setInterval(updateClock, 1000);
 
-    // DB 연결 여부와 관계없이 데스크톱 창 UI부터 표시
-    openWindow("calendarWindow");
-
     try {
+        // 최초 방문 브라우저는 연결 설정부터 표시하고 데스크톱을 열지 않음
         const connected = await initSupabase();
-        if (!connected) return;
+        if (!connected) {
+            closeWindow("calendarWindow");
+            showModal("setupModal");
+            return;
+        }
+
+        // 연결 설정이 저장된 경우에만 데스크톱을 표시하고 로그인 상태 확인
+        openWindow("calendarWindow");
         await checkAuth();
     } catch (error) {
         console.error("앱 초기화 오류:", error);
