@@ -328,11 +328,13 @@ body {
     position: absolute;
     right: 0;
     bottom: 0;
-    width: 26px;
-    height: 26px;
+    width: 38px;
+    height: 38px;
     cursor: nwse-resize;
-    z-index: 100;
+    z-index: 500;
     touch-action: none;
+    pointer-events: auto;
+    background: linear-gradient(135deg, transparent 65%, rgba(255,255,255,.10) 65%);
 }
 
 .window-resize-handle::before,
@@ -2475,6 +2477,7 @@ function openDesktopApp(app) {
 function setupDesktopIcons() {
     document.querySelectorAll(".desktop-icon").forEach(icon => {
         let dragging = false, startX = 0, startY = 0, originalX = 0, originalY = 0;
+        let touchTapTimer = null;
 
         icon.addEventListener("pointerdown", e => {
             dragging = true;
@@ -2498,8 +2501,18 @@ function setupDesktopIcons() {
             if (!dragging) return;
             const moved = Math.abs(e.clientX - startX) > 6 || Math.abs(e.clientY - startY) > 6;
             dragging = false;
-            if (moved) saveIconPositions();
-            if (!moved && e.pointerType === "touch") openDesktopApp(icon.dataset.app);
+            if (moved) {
+                saveIconPositions();
+                if (touchTapTimer) { clearTimeout(touchTapTimer); touchTapTimer = null; }
+            } else if (e.pointerType === "touch") {
+                if (touchTapTimer) {
+                    clearTimeout(touchTapTimer);
+                    touchTapTimer = null;
+                    openDesktopApp(icon.dataset.app);
+                } else {
+                    touchTapTimer = setTimeout(() => { touchTapTimer = null; }, 380);
+                }
+            }
             try { if (icon.hasPointerCapture(e.pointerId)) icon.releasePointerCapture(e.pointerId); } catch {}
         };
 
@@ -2535,6 +2548,15 @@ function loadIconPositions() {
 /* =========================================================
    PERSONALIZATION
 ========================================================= */
+function applyAppearancePreview() {
+    const theme=document.documentElement.dataset.theme==="light"?"light":"dark";
+    const color=$("wallpaperColor")?.value||(theme==="light"?"#f5f6f8":"#0f1115");
+    const taskbar=$("taskbarColor")?.value||(theme==="light"?"#ffffff":"#181b21");
+    const image=localStorage.getItem(STORAGE.wallpaperImage)||"";
+    document.documentElement.style.setProperty("--wallpaper-color",color);
+    document.documentElement.style.setProperty("--wallpaper-image",image?'url("'+image+'")':"none");
+    document.documentElement.style.setProperty("--taskbar-custom",taskbar);
+}
 function applySavedAppearance() {
     const theme=localStorage.getItem(STORAGE.theme)||"dark";
     document.documentElement.dataset.theme=theme==="light"?"light":"dark";
@@ -2547,15 +2569,19 @@ function applySavedAppearance() {
     if($("wallpaperColor")) $("wallpaperColor").value=color;
     if($("taskbarColor")) $("taskbarColor").value=taskbar;
 }
-function openSettings(){
-    loadSetupValues();
-    const t=localStorage.getItem(STORAGE.theme)||"dark";
+function syncThemeButtons() {
+    const t=document.documentElement.dataset.theme||"dark";
     $("darkThemeButton").textContent=t==="dark"?"● 블랙":"○ 블랙";
     $("lightThemeButton").textContent=t==="light"?"● 화이트":"○ 화이트";
+}
+function openSettings(){
+    loadSetupValues();
+    applySavedAppearance();
+    syncThemeButtons();
     showModal("setupModal");
 }
 function saveAppearance(){
-    localStorage.setItem(STORAGE.theme,document.documentElement.dataset.theme||"dark");
+    localStorage.setItem(STORAGE.theme,document.documentElement.dataset.theme==="light"?"light":"dark");
     localStorage.setItem(STORAGE.wallpaperColor,$("wallpaperColor").value);
     localStorage.setItem(STORAGE.taskbarColor,$("taskbarColor").value);
     applySavedAppearance();
@@ -2564,7 +2590,7 @@ function setupWallpaperPicker(){
     $("wallpaperImage").addEventListener("change",e=>{
         const file=e.target.files?.[0]; if(!file||!file.type.startsWith("image/")) return;
         const reader=new FileReader();
-        reader.onload=()=>{try{localStorage.setItem(STORAGE.wallpaperImage,reader.result);applySavedAppearance()}catch{alert("사진이 너무 큽니다. 더 작은 이미지를 사용해 주세요.")}};
+        reader.onload=()=>{try{localStorage.setItem(STORAGE.wallpaperImage,reader.result);applyAppearancePreview()}catch{alert("사진이 너무 큽니다. 더 작은 이미지를 사용해 주세요.")}};
         reader.readAsDataURL(file);
     });
 }
@@ -2609,6 +2635,8 @@ async function saveSetup() {
         return;
     }
 
+    const configChanged = url !== (localStorage.getItem(STORAGE.supabaseUrl)||"") ||
+        key !== (localStorage.getItem(STORAGE.supabaseKey)||"");
     localStorage.setItem(STORAGE.supabaseUrl, url);
     localStorage.setItem(STORAGE.supabaseKey, key);
     if (gemini) localStorage.setItem(STORAGE.geminiKey, gemini);
@@ -2616,7 +2644,7 @@ async function saveSetup() {
     saveAppearance();
 
     hideModal("setupModal");
-    location.reload();
+    if (configChanged) location.reload();
 }
 
 /* =========================================================
@@ -2652,21 +2680,23 @@ $("eventDelete").addEventListener("click", deleteEvent);
 $("familyClose").addEventListener("click", () => hideModal("familyModal"));
 $("saveMyName").addEventListener("click", saveMyName);
 $("setupSave").addEventListener("click", saveSetup);
-$("settingsClose").addEventListener("click",()=>hideModal("setupModal"));
+$("settingsClose").addEventListener("click",()=>{
+    applySavedAppearance();
+    syncThemeButtons();
+    hideModal("setupModal");
+});
 $("darkThemeButton").addEventListener("click",()=>{
     document.documentElement.dataset.theme="dark";
-    $("darkThemeButton").textContent="● 블랙";
-    $("lightThemeButton").textContent="○ 화이트";
-    saveAppearance();
+    syncThemeButtons();
+    applyAppearancePreview();
 });
 $("lightThemeButton").addEventListener("click",()=>{
     document.documentElement.dataset.theme="light";
-    $("darkThemeButton").textContent="○ 블랙";
-    $("lightThemeButton").textContent="● 화이트";
-    saveAppearance();
+    syncThemeButtons();
+    applyAppearancePreview();
 });
-$("wallpaperColor").addEventListener("input",saveAppearance);
-$("taskbarColor").addEventListener("input",saveAppearance);
+$("wallpaperColor").addEventListener("input",applyAppearancePreview);
+$("taskbarColor").addEventListener("input",applyAppearancePreview);
 $("logoutFromSettings").addEventListener("click",async()=>{await supabaseClient.auth.signOut();location.reload()});
 $("settingsTask").addEventListener("click",openSettings);
 $("patchnotesTask").addEventListener("click",()=>{openWindow("patchnotesWindow");loadPatchNotes()});
