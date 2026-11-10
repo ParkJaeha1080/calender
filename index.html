@@ -1531,6 +1531,7 @@ async function checkAuth() {
             loadEvents(),
             new Promise((_, reject) => setTimeout(() => reject(new Error("events 조회 시간 초과")), 12000))
         ]);
+        setStatus("● DB 조회 완료 · 실시간 채널 연결 중");
         subscribeRealtime();
         renderCalendar();
     } catch (error) {
@@ -1562,8 +1563,8 @@ async function loadMembers() {
         .order("created_at");
 
     if (error) {
-        console.error(error);
-        return;
+        console.error("family_members 조회 실패:", error);
+        throw new Error("family_members 조회 실패: " + (error.message || error.code || "알 수 없는 오류"));
     }
 
     members = data || [];
@@ -1604,9 +1605,9 @@ async function loadEvents() {
         .order("event_time", { ascending: true });
 
     if (error) {
-        console.error(error);
-        setStatus("● 일정 불러오기 실패");
-        return;
+        console.error("events 조회 실패:", error);
+        setStatus("● 일정 조회 실패");
+        throw new Error("events 조회 실패: " + (error.message || error.code || "알 수 없는 오류"));
     }
 
     events = (data || []).map(ev => {
@@ -1629,21 +1630,47 @@ async function loadEvents() {
 }
 
 function subscribeRealtime() {
-    if (!supabaseClient) return;
+    if (!supabaseClient) {
+        setStatus("● Supabase 클라이언트 없음");
+        return;
+    }
 
+    setStatus("● DB 조회 완료 · 실시간 채널 연결 중");
     supabaseClient
         .channel("family-calendar-events")
         .on("postgres_changes", { event: "*", schema: "public", table: "events" }, async () => {
-            await loadEvents();
+            try {
+                await loadEvents();
+                setStatus("● 실시간 연결됨");
+            } catch (error) {
+                console.error("실시간 일정 갱신 실패:", error);
+                setStatus("● 일정 갱신 실패");
+            }
         })
         .on("postgres_changes", { event: "*", schema: "public", table: "family_members" }, async () => {
-            await loadMembers();
-            renderFamily();
-            renderCalendar();
+            try {
+                await loadMembers();
+                renderFamily();
+                renderCalendar();
+            } catch (error) {
+                console.error("실시간 가족 정보 갱신 실패:", error);
+                setStatus("● 가족 정보 갱신 실패");
+            }
         })
-        .subscribe(status => {
-            if (status === "SUBSCRIBED") setStatus("● 실시간 연결됨");
-            if (status === "CHANNEL_ERROR") setStatus("● 실시간 오류");
+        .subscribe((status, error) => {
+            console.log("Supabase Realtime 상태:", status, error || "");
+            if (status === "SUBSCRIBED") {
+                setStatus("● 실시간 연결됨");
+            } else if (status === "CHANNEL_ERROR") {
+                setStatus("● 실시간 채널 오류");
+                console.error("Realtime CHANNEL_ERROR:", error);
+            } else if (status === "TIMED_OUT") {
+                setStatus("● 실시간 연결 시간 초과");
+            } else if (status === "CLOSED") {
+                setStatus("● 실시간 연결 종료");
+            } else if (status === "JOINING") {
+                setStatus("● 실시간 채널 연결 중");
+            }
         });
 }
 
