@@ -720,18 +720,25 @@ select:focus {
     padding: 22px;
 }
 
-/* 가족 창 내부 여백 */
-#familyModal .modal-box {
-    padding: 28px;
+/* 가족 창 크기와 내부 여백 */
+#familyWindow {
+    width: min(560px, calc(100vw - 32px));
+    height: min(520px, calc(100vh - 80px));
+    min-width: 330px;
+    min-height: 360px;
 }
 
-#familyModal .form-row {
+#familyWindow .window-content {
+    padding: 22px 28px;
+}
+
+#familyWindow .form-row {
     box-sizing: border-box;
 }
 
-#familyModal .form-row > input,
-#familyModal .form-row > #currentAccount,
-#familyModal .form-row > #memberList {
+#familyWindow .form-row > input,
+#familyWindow .form-row > #currentAccount,
+#familyWindow .form-row > #memberList {
     max-width: 100%;
 }
 
@@ -1313,10 +1320,17 @@ html[data-theme="light"] .auth-switch button {
     </div>
 </div>
 
-<!-- FAMILY MODAL -->
-<div class="modal" id="familyModal">
-    <div class="modal-box">
-        <div class="modal-title">👨‍👩‍👧 가족</div>
+<!-- FAMILY WINDOW -->
+<div class="window" id="familyWindow">
+    <div class="titlebar">
+        <div class="title">👨‍👩‍👧 가족</div>
+        <div class="window-controls">
+            <button class="window-control" data-minimize="familyWindow" aria-label="최소화">─</button>
+            <button class="window-control" data-maximize="familyWindow" aria-label="최대화">□</button>
+            <button class="window-control close" data-close="familyWindow" aria-label="닫기">×</button>
+        </div>
+    </div>
+    <div class="window-content">
         <div class="form-row">
             <div class="form-label">현재 계정</div>
             <div id="currentAccount"></div>
@@ -1335,6 +1349,7 @@ html[data-theme="light"] .auth-switch button {
             <button class="btn primary" id="saveMyName">저장</button>
         </div>
     </div>
+    <div class="window-resize-handle"></div>
 </div>
 
 <!-- SETTINGS WINDOW -->
@@ -2501,7 +2516,7 @@ function openDesktopApp(app) {
     else if (app === "ai") openWindow("aiWindow");
     else if (app === "family") {
         renderFamily();
-        showModal("familyModal");
+        openWindow("familyWindow");
     } else if (app === "settings") openSettings();
     else if (app === "patchnotes") {
         openWindow("patchnotesWindow");
@@ -2729,7 +2744,7 @@ $("eventCancel").addEventListener("click", () => hideModal("eventModal"));
 $("eventSave").addEventListener("click", saveEvent);
 $("eventDelete").addEventListener("click", deleteEvent);
 
-$("familyClose").addEventListener("click", () => hideModal("familyModal"));
+$("familyClose").addEventListener("click", () => closeWindow("familyWindow"));
 $("saveMyName").addEventListener("click", saveMyName);
 $("setupSave").addEventListener("click", saveSetup);
 $("settingsClose").addEventListener("click",()=>{
@@ -2780,7 +2795,7 @@ $("calendarTask").addEventListener("click", () => openWindow("calendarWindow"));
 $("aiTask").addEventListener("click", () => openWindow("aiWindow"));
 $("familyTask").addEventListener("click", () => {
     renderFamily();
-    showModal("familyModal");
+    openWindow("familyWindow");
 });
 
 document.querySelectorAll("[data-close]").forEach(btn => {
@@ -2788,7 +2803,7 @@ document.querySelectorAll("[data-close]").forEach(btn => {
 });
 
 document.querySelectorAll("[data-minimize]").forEach(btn => {
-    btn.addEventListener("click", () => closeWindow(btn.minimize));
+    btn.addEventListener("click", () => closeWindow(btn.dataset.minimize));
 });
 
 document.querySelectorAll("[data-maximize]").forEach(btn => {
