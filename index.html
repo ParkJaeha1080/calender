@@ -2329,7 +2329,15 @@ async function sendAI() {
             }
         );
 
-        if (!response.ok) throw new Error(`Gemini HTTP ${response.status}`);
+        if (!response.ok) {
+            const errorBody = await response.text();
+            let errorMessage = errorBody;
+            try {
+                const parsedError = JSON.parse(errorBody);
+                errorMessage = parsedError?.error?.message || errorBody;
+            } catch {}
+            throw new Error(`Gemini HTTP ${response.status}: ${errorMessage}`);
+        }
 
         const data = await response.json();
         const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
