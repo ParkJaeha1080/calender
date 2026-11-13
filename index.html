@@ -934,8 +934,18 @@ select:focus {
 /* =========================================================
    SETTINGS & PATCH NOTES
 ========================================================= */
-.settings-box{width:min(560px,100%);max-width:560px;margin:0 auto}
-.settings-window-content{padding:0;overflow:auto}
+.settings-box{width:min(560px,100%);max-width:560px;margin:0 auto;text-align:center}
+.settings-window-content{padding:0;overflow:auto;display:flex;justify-content:center}
+.settings-box .form-label,
+.settings-box .settings-help,
+.settings-box .settings-section-title{text-align:center}
+.settings-box .settings-choice-row,
+.settings-box .settings-account-actions{justify-content:center}
+.settings-box .form-row{display:flex;flex-direction:column;align-items:center}
+.settings-box input,
+.settings-box textarea,
+.settings-box select{margin-left:auto;margin-right:auto}
+.settings-box .modal-actions{justify-content:center}
 .settings-section{padding:14px 0;border-top:1px solid var(--border,rgba(255,255,255,.12))}
 .settings-section:first-of-type{border-top:0}
 .settings-section-title{font-size:13px;font-weight:650;margin-bottom:12px}
